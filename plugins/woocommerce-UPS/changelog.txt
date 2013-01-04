@@ -1,0 +1,28 @@
+*** UPS Changelog ***
+
+2012.06.12 - version 1.0.8
+	* Rates contain names instead of codes
+	
+2012.04.15 - version 1.0.7
+	* Save hook for WC 1.5.4
+
+2012.04.10 - version 1.0.6
+    * Add custom made shipping per order feature.
+
+2012.03.28 - version 1.0.5
+    * Fixed method limiting
+    
+2012.03.28 - version 1.0.4
+    * Add customer classification code to fix Daily pickup problem
+
+2012.03.19 - version 1.0.3
+    * Support for countries with no state
+
+2012.03.19 - version 1.0.2
+    * Fix a bug that causes wrong shipping rate with different item quantity
+
+2012.03.13 - version 1.0.1
+    * Added debugging
+
+2012.03.08 - version 1.0
+    * All spark!
