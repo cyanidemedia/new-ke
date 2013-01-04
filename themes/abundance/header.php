@@ -50,6 +50,7 @@
 	 */
 	if ( is_singular() && get_option( 'thread_comments' ) ) { wp_enqueue_script( 'comment-reply' ); }
 	
+	echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
 ?>
 
 <!-- plugin and theme output with wp_head() -->
@@ -95,7 +96,7 @@ $style = avia_get_option('boxed','boxed');
 
 <body id="top" <?php body_class($style." ".avia_get_browser()); ?>>
 	
-	
+	<div class='mobile_wrap'>
 	
 			<!-- ####### HEAD CONTAINER ####### -->
 			
@@ -120,6 +121,8 @@ $style = avia_get_option('boxed','boxed');
 					?> 
 					
 					<ul class="social_bookmarks">
+						<?php do_action('avia_add_social_icon','header'); ?>
+					
 						<li class='rss'><a href="<?php bloginfo('rss2_url'); ?>">RSS</a></li>
 						<?php 
 						if($twitter = avia_get_option('twitter')) echo "<li class='twitter'><a href='http://twitter.com/".$twitter."'>Twitter</a></li>";

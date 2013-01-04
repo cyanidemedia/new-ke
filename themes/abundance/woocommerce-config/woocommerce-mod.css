@@ -1704,3 +1704,78 @@ line-height: 110%;
 #order_review, #order_review_heading{
 clear: both;
 }
+
+
+/*added for woocommerce 1.5+*/
+
+.summary p.cart{float:none;}
+
+#top div .product .price ins::before {
+font-size: 14px;
+line-height: 30px;
+}
+
+#top #review_form #respond p {
+margin: 0 0 10px;
+}
+
+.stretched .sub_menu > .megaWrapper > .avia_mega {
+  position: absolute;
+  right: 0;
+  top: -70px;
+}
+
+.summary .social{
+padding:20px 0;
+clear: both;
+margin:0;
+}
+
+
+/*added for woocommerce 1.5 +*/
+
+#top .variations td {
+text-align: left;
+}
+
+#top .reset_variations{padding:0px 20px;}
+
+.entry-content .content{
+float:none;
+clear: both;
+width:100%;
+}
+
+.entry-content .products li{list-style-type: none;}
+
+
+.MSIE9 .mousetrap{
+background: #fff;
+opacity: 0;
+}
+
+
+.MSIE8 .mousetrap, .MSIE7 .mousetrap{
+background: #fff;
+/* ie7 */
+filter: alpha(opacity = 0);
+/* ie8 */
+-ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
+}
+
+
+/*woocommerce 1.6*/
+#top .template-shop .clear {
+clear: none;
+}
+
+#payment .terms {
+padding: 7px 0 0 0;
+}
+
+#customer_details .form-row{clear:right;}
+#customer_details #order_comments_field{clear:left;}
+
+.entry-content ul.products li {
+list-style-type: none;
+}

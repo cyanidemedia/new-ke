@@ -241,9 +241,12 @@ if(!function_exists('avia_backend_get_hex_from_rgb'))
  	function avia_backend_get_hex_from_rgb($r=FALSE, $g=FALSE, $b=FALSE) {
 		$x = 255;
 		$y = 0;
+		
 		$r = (is_int($r) && $r >= $y && $r <= $x) ? $r : 0;
 		$g = (is_int($g) && $g >= $y && $g <= $x) ? $g : 0;
 		$b = (is_int($b) && $b >= $y && $b <= $x) ? $b : 0;
+		
+		
 		return sprintf('#%02X%02X%02X', $r, $g, $b);
 	}
 }
@@ -260,6 +263,7 @@ if(!function_exists('avia_backend_calculate_similar_color'))
 	 */
  	function avia_backend_calculate_similar_color($color, $shade, $amount) 
  	{
+ 	
  		//remove # from the begiining if available and make sure that it gets appended again at the end if it was found
  		$newcolor = "";
  		$prepend = "";
@@ -305,6 +309,95 @@ if(!function_exists('avia_backend_calculate_similar_color'))
 	}
 }
 
+if(!function_exists('avia_backend_hex_to_rgb_array'))
+{
+	/**
+	 *  converts an hex string into an rgb array
+	 *  @param string $color hex color code
+	 *  @return array $color 
+	 */
+	function avia_backend_hex_to_rgb_array($color) 
+	{
+		if(strpos($color,'#') !== false) 
+		{ 
+			$color = substr($color, 1, strlen($color)); 
+		}
+		
+		$color = str_split($color, 2);
+		foreach($color as $key => $c) $color[$key] = hexdec($c);
+		
+		return $color;
+	}
+}
+
+if(!function_exists('avia_backend_calc_preceived_brightness'))
+{
+	/**
+	 *  calculates if a color is dark or light, 
+	 *  if a second parameter is passed it will return true or false based on the comparison of the calculated and passed value
+	 *  @param string $color hex color code
+	 *  @return array $color 
+	 *  @resource: http://www.nbdtech.com/Blog/archive/2008/04/27/Calculating-the-Perceived-Brightness-of-a-Color.aspx
+	 */
+	function avia_backend_calc_preceived_brightness($color, $compare = false) 
+	{
+		$rgba = avia_backend_hex_to_rgb_array($color);
+	
+		$brighntess = sqrt(
+	      $rgba[0] * $rgba[0] * 0.241 + 
+	      $rgba[1] * $rgba[1] * 0.691 + 
+	      $rgba[2] * $rgba[2] * 0.068);
+		
+		if($compare)
+		{
+			$brighntess = $brighntess < $compare ? true : false;
+		}
+
+		return $brighntess;
+	}
+}
+
+
+
+if(!function_exists('avia_backend_merge_colors'))
+{
+	/**
+	 *  merges to colors
+	 *  @param string $color1 hex color code
+	 *  @param string $color2 hex color code
+	 *  @return new color 
+	 */
+	function avia_backend_merge_colors($color1, $color2) 
+	{
+		if(empty($color1)) return $color2;
+		if(empty($color2)) return $color1;
+	
+		$prepend = array("", "");
+		$colors  = array(avia_backend_hex_to_rgb_array($color1), avia_backend_hex_to_rgb_array($color2));
+		
+		$final = array();
+		foreach($colors[0] as $key => $color)
+		{
+			$final[$key] = (int) ceil(($colors[0][$key] + $colors[1][$key]) / 2);
+		}
+	
+		return avia_backend_get_hex_from_rgb($final[0], $final[1], $final[2]);
+	
+	}
+}
+
+
+function avia_backend_counter_color($color) 
+{
+	$color = avia_backend_hex_to_rgb_array($color);
+	
+	foreach($color as $key => $value)
+	{
+		$color[$key] = (int) (255 - $value);
+	}
+	
+	return avia_backend_get_hex_from_rgb($color[0], $color[1], $color[2]); 
+}
 
 
 if(!function_exists('avia_backend_add_thumbnail_size'))
@@ -386,7 +479,7 @@ if(!function_exists('avia_backend_theme_activation'))
 			do_action('avia_backend_theme_activation');
 			
 			#redirect to options page
-			header( 'Location: '.admin_url().'admin.php?page=avia' ) ;
+			header( 'Location: '.admin_url().'admin.php?avia_welcome=true&page=avia' ) ;
 		}
 	}
 	
@@ -410,9 +503,15 @@ if(!function_exists('avia_backend_truncate'))
 		{ 
 			if($breakpoint < strlen($string) - 1) 
 			{ 
-				$string = substr($string, 0, $breakpoint) . $pad; 
+				$string = mb_substr($string, 0, $breakpoint) . $pad; 
 			} 
 		} 
+		
+		if(!$breakpoint)
+		{
+			$string = mb_substr($string, 0, $limit) . $pad; 
+		}
+		
 		return $string; 
 	}
 }
@@ -448,7 +547,7 @@ if(!function_exists('avia_backend_get_dynamic_templates'))
 	/**
 	 *  This function gets dynamic templates created at the template generator
 	 */
-	function avia_backend_get_dynamic_templates() 
+	function avia_backend_get_dynamic_templates($prepend = "") 
 	{
 		$templates = array();
 		global $avia;
@@ -459,7 +558,7 @@ if(!function_exists('avia_backend_get_dynamic_templates'))
 			{
 				if(array_key_exists('sortable', $page))
 				{	
-					$templates[$page['title']] = $page['slug'];
+					$templates[$page['title']] = $prepend.$page['slug'];
 				}
 			}
 		}
@@ -508,8 +607,95 @@ if(!function_exists('avia_backend_get_post_page_cat_name_by_id'))
 
 
 
+// ADMIN MENU
+if(!function_exists('avia_backend_admin_bar_menu'))
+{
+	add_action('admin_bar_menu', 'avia_backend_admin_bar_menu', 99);
+	function avia_backend_admin_bar_menu() {
+	
+	if(!current_user_can('manage_options')) return;
+	
+	global $avia, $wp_admin_bar;
+	
+	$real_id  = avia_get_the_ID();
+	
+	//home edit button for frontpage
+	if(is_front_page())
+	{
+		$front_id = avia_get_option('frontpage');
+		$parent = "";
+		
+		if($front_id && $real_id == $front_id)
+		{
+			$menu = array(
+				'id' => 'edit',
+				'title' => __('Edit Frontpage'),
+				'href' => admin_url('post.php?post='.$real_id.'&action=edit'),
+				'meta' => array('target' => 'blank')
+			);
+			
+			$wp_admin_bar->add_menu($menu);
+		}
+	}
+	
+	
+	//dynamic tempalte edit for current entry, in case a dynamic tempalte is applied
+	
+	if($template = avia_is_dynamic_template())
+	{
+		$safeSlug = avia_backend_safe_string($template); 
+		
+		$menu = array(
+			'id' => 'avia_edit',
+			'title' => __('Edit this entry'),
+			'href' => admin_url('post.php?post='.$real_id.'&action=edit'),
+			'meta' => array('target' => 'blank'),
+			'parent'=> 'edit'
+		);
+		$wp_admin_bar->add_menu($menu);
+		
+		$menu = array(
+			'id' => 'avia_edit_dynamic',
+			'title' => __('Edit Dynamic Template of this entry'),
+			'href' => admin_url( "admin.php?page=templates#goto_".$safeSlug ),
+			'meta' => array('target' => 'blank'),
+			'parent'=> 'edit'
+		);
+		 
+		$wp_admin_bar->add_menu($menu);
+	}
+	
+	
+	
+	// add all option pages
+	
+	if(empty($avia->option_pages)) return;
+	
+		$urlBase = admin_url( 'admin.php' );
 
-
+		foreach($avia->option_pages as $avia_page)
+		{
+			$safeSlug = avia_backend_safe_string($avia_page['title']);
+			
+			$menu = array(
+				'id' => $avia_page['slug'],
+				'title' => strip_tags($avia_page['title']),
+				'href' => $urlBase."?page=".$avia_page['slug'],
+				'meta' => array('target' => 'blank')
+			);
+			
+			if($avia_page['slug'] != $avia_page['parent']  )
+			{
+				 $menu['parent'] = $avia_page['parent'];
+				 $menu['href'] = $urlBase."?page=".$avia_page['parent']."#goto_".$safeSlug;
+			}
+			
+			if(is_admin()) $menu['meta'] = array('onclick' => 'self.location.replace(encodeURI("'.$menu['href'].'")); window.location.reload(true);  ');
+		
+			$wp_admin_bar->add_menu($menu);
+		}
+	}
+}
 
 
 

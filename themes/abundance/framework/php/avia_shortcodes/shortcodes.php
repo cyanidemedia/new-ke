@@ -32,6 +32,8 @@ class avia_shortcodes{
 		
 		add_action( 'admin_init', array( &$this, 'action_admin_init' ) );
 		add_action( 'wp_ajax_scn_check_url_action', array( &$this, 'ajax_action_check_url' ) );
+		add_action( 'admin_print_scripts', array( &$this, 'extra_shortcodes' ),20);
+		add_action( 'admin_print_scripts', array( &$this, 'extra_styles' ),20);
 	}
 	
 	function action_admin_init() {
@@ -42,7 +44,7 @@ class avia_shortcodes{
 		  	
 			add_filter( 'mce_buttons',          array( &$this, 'filter_mce_buttons'          ) );
 			add_filter( 'mce_external_plugins', array( &$this, 'filter_mce_external_plugins' ) );
-			
+			//add_filter( 'wp_fullscreen_buttons', array( &$this, 'filter_mce_external_plugins' ) );
 			
 			wp_register_style('scnStyles', $this->plugin_url() . 'css/styles.css');
 			wp_enqueue_style('scnStyles');
@@ -95,6 +97,61 @@ class avia_shortcodes{
 		echo '{ "exists": '. ($exists ? '1' : '0') . ($hadError ? ', "error" : 1 ' : '') . ' }';
 
 		die();
+	}
+	
+	function extra_shortcodes()
+	{
+		$theme_support = get_theme_support( 'avia-shortcodes' );
+		
+		if(is_array($theme_support) && !empty($theme_support[0]))
+		{
+			$supports = "";
+			
+			foreach($theme_support[0] as $main_key => $supportitem)
+			{
+				$supports .= $main_key.":";
+				if(is_array($supportitem))
+				{
+					$supports .= "{";
+					foreach($supportitem as $key => $subitem)
+					{
+						$supports .=  $key.": '".$subitem."', ";
+					}
+					$supports = rtrim($supports,', ');
+					$supports .= "}, ";
+				}
+				else
+				{
+					
+					$supports .= "'";
+					$supports .=  $supportitem;
+					$supports .= "', ";
+				}
+				
+				
+			}
+			
+			$supports = rtrim($supports, ', ');
+			
+			echo "\n <script type='text/javascript'>\n /* <![CDATA[ */  \n";
+			echo "avia_framework_globals.shortcodes = { $supports }; \n /* ]]> */ \n ";
+			echo "</script>\n \n ";
+		}
+	}
+	
+	function extra_styles()
+	{
+		global $avia_config;
+		if(isset($avia_config['backend_style']))
+		{
+			//$string = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $avia_config['backend_style']);
+			$string = preg_replace('/\r|\n|\t/', ' ', $avia_config['backend_style']);
+		
+			echo "\n <script type='text/javascript'>\n /* <![CDATA[ */  \n";
+			echo "avia_framework_globals.backend_style = '".$string."'; \n /* ]]> */ \n ";
+			echo "</script>\n \n ";
+		}
+		
 	}
 
 }

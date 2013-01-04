@@ -60,7 +60,7 @@ if(!function_exists('avia_get_option'))
 	* @param bool $decode decode the result or not, default is to false
 	* @return string $result: the saved result. if no result was saved or the key doesnt exist returns an empty string
 	*/
-	function avia_get_option($key, $default = "", $echo = false, $decode = true)
+	function avia_get_option($key = false, $default = "", $echo = false, $decode = true)
 	{
 		global $avia;
 		$result = $avia->options;
@@ -74,7 +74,11 @@ if(!function_exists('avia_get_option'))
 			$result = $result['avia'];
 		}
 		
-		if(isset($result[$key]))
+		if($key === false)
+		{
+			//pass the whole array
+		}
+		else if(isset($result[$key]))
 		{	
 			$result = $result[$key];
 		}
@@ -146,8 +150,9 @@ if(!function_exists('avia_is_overview'))
 	
 	function avia_is_overview()
 	{
+		global $avia_config;
 		$result = true;
-	
+		
 		if (is_singular())
 		{ 
 			$result = false;
@@ -157,6 +162,11 @@ if(!function_exists('avia_is_overview'))
 		{
 			$result = false;
 		}
+		
+		if (isset($avia_config['avia_is_overview']))
+		{ 
+			$result = $avia_config['avia_is_overview'];
+		} 
 		
 		return $result;
 	}
@@ -174,6 +184,7 @@ if(!function_exists('avia_is_dynamic_template'))
 	{
 		$result = false;
 		if(!$id) $id = avia_get_the_ID();
+		if(!$id) return $result;
 		
 		if($dependency)
 		{
@@ -183,9 +194,9 @@ if(!function_exists('avia_is_dynamic_template'))
 			}
 		}
 		
-		if(avia_post_meta($id, 'dynamic_templates')) 
+		if($template = avia_post_meta($id, 'dynamic_templates')) 
 		{
-			$result = true; 
+			$result = $template; 
 		}
 		
 		return $result;
@@ -203,35 +214,40 @@ if(!function_exists('avia_post_meta'))
 	*/
 	function avia_post_meta($post_id = '', $subkey = false)
 	{
+		$avia_post_id = $post_id;
+	
 		//if the user only passed a string and no id the string will be used as subkey
-		if(!$subkey && $post_id != "" && !is_numeric($post_id) && !is_object($post_id))
+		if(!$subkey && $avia_post_id != "" && !is_numeric($avia_post_id) && !is_object($avia_post_id))
 		{
-			$subkey = $post_id;
-			$post_id = "";
+			$subkey = $avia_post_id;
+			$avia_post_id = "";
 		}
 		
 		global $avia, $avia_config;
 		$key = '_avia_elements_'.$avia->option_prefix;
-		//$key = '_avia_elements_theme_compatibility_mode';
+		if(current_theme_supports( 'avia_post_meta_compat' )) 
+		{
+			$key = '_avia_elements_theme_compatibility_mode'; //actiavates a compatibility mode for easier theme switching and keeping post options
+		}
 		$values = "";
 		
 		//if post id is on object the function was called via hook. If thats the case reset the meta array
-		if(is_object($post_id) && isset($post_id->ID)) 
+		if(is_object($avia_post_id) && isset($avia_post_id->ID)) 
 		{ 
-			$post_id = $post_id->ID;
+			$avia_post_id = $avia_post_id->ID;
 		}
 		
 		
-		if(!$post_id) 
+		if(!$avia_post_id) 
 		{ 
-			$post_id = get_the_ID();
+			$avia_post_id = @get_the_ID();
 		}
 		
-		if(!is_numeric($post_id)) return;
+		if(!is_numeric($avia_post_id)) return;
 		
 		
-		$avia_config['meta'] = avia_deep_decode(get_post_meta($post_id, $key, true));
-		$avia_config['meta'] = apply_filters('avia_post_meta_filter', $avia_config['meta'], $post_id);
+		$avia_config['meta'] = avia_deep_decode(get_post_meta($avia_post_id, $key, true));
+		$avia_config['meta'] = apply_filters('avia_post_meta_filter', $avia_config['meta'], $avia_post_id);
 		
 		if($subkey && isset($avia_config['meta'][$subkey]))
 		{
@@ -250,6 +266,51 @@ if(!function_exists('avia_post_meta'))
 	}
 	
 	add_action('the_post', 'avia_post_meta');
+}
+
+
+
+
+if(!function_exists('avia_get_option_set'))
+{
+	/**
+	* This function serves as shortcut to retrieve option sets saved within the database by the option pages of the avia framework
+	* An option set is a group of clone-able options like for example portfolio pages: you can create multiple portfolios and each
+	* of them has a unique set of sub-options (for example column count, item count, etc)
+	* 
+	* the function is called like this: avia_get_option_set('option_key','suboption_key','suboption_value');
+	* That would retrieve the following var saved in the global $avia superobject: $avia->options['avia']['portfolio']
+	* Then, depending on the subkey and subkey value one of the arrays that were just fetched are passed.
+	*
+	* Example:
+	* avia_get_option_set('portfolio', 'portfolio_page', get_the_ID())
+	* This would get the portfolio group that has an item called 'portfolio_page' with the ID of the current post or page
+	*
+	* @param string $key accepts a string
+	* @param string $subkey accepts a string
+	* @param string $subkey_value accepts a string
+	* @return array $result: the saved result. if no result was saved or the key doesnt exist returns an empty array
+	*/
+	
+	function avia_get_option_set($key, $subkey = false, $subkey_value = false)
+	{
+		$result 	= array();
+		$all_sets 	= avia_get_option($key);
+		
+		if(is_array($all_sets) && $subkey && $subkey_value !== false)
+		{
+			foreach($all_sets as $set)
+			{
+				if(isset($set[$subkey]) && $set[$subkey] == $subkey_value) return $set;
+			}
+		}
+		else
+		{
+			$result = $all_sets;
+		}
+		
+		return $result;
+	}
 }
 
 
@@ -325,17 +386,22 @@ if(!function_exists('avia_logo'))
 	 * otherwise display the logo file linked in the css file for the .bg-logo class
 	 * @return string the logo + url
 	 */
-	function avia_logo()
+	function avia_logo($use_image = "", $sub = "")
 	{
+		$use_image = apply_filters('avia_logo_filter', $use_image);
+		if($sub) $sub = "<span class='subtext'>$sub</span>";
+		
+		
 		if($logo = avia_get_option('logo'))
 		{
 			 $logo = "<img src=".$logo." alt='' />";
-			 $logo = "<h1 class='logo'><a href='".home_url('/')."'>".$logo."</a></h1>";
+			 $logo = "<h1 class='logo'><a href='".home_url('/')."'>".$logo."$sub</a></h1>";
 		}
 		else
 		{
 			$logo = get_bloginfo('name');
-			$logo = "<h1 class='logo bg-logo'><a href='".home_url('/')."'>".$logo."</a></h1>";
+			if($use_image) $logo = "<img src=".$use_image." alt='' title='$logo'/>";
+			$logo = "<h1 class='logo bg-logo'><a href='".home_url('/')."'>".$logo."$sub</a></h1>";
 		}
 	
 		return $logo;
@@ -350,7 +416,7 @@ if(!function_exists('avia_image_by_id'))
 	 * Fetches an image based on its id and returns the string image with title and alt tag
 	 * @return string image url
 	 */
-	function avia_image_by_id($thumbnail_id, $size = array('width'=>800,'height'=>800), $output = 'image')
+	function avia_image_by_id($thumbnail_id, $size = array('width'=>800,'height'=>800), $output = 'image', $data = "")
 	{	
 		if(!is_numeric($thumbnail_id)) {return false; }
 		
@@ -375,7 +441,7 @@ if(!function_exists('avia_image_by_id'))
 			$image_description = trim(strip_tags($image_description));
 			$image_title = trim(strip_tags($attachment->post_title));
 			
-			return "<img src='".$image_src[0]."' title='".$image_title."' alt='".$image_description."' />";
+			return "<img src='".$image_src[0]."' title='".$image_title."' alt='".$image_description."' ".$data."/>";
 		}
 	}
 }
@@ -389,23 +455,24 @@ if(!function_exists('avia_html5_video_embed'))
 	 */
 	function avia_html5_video_embed($path, $image = "", $types = array('webm' => 'type="video/webm"', 'mp4' => 'type="video/mp4"', 'ogv' => 'type="video/ogg"'))
 	{	
+		
 		preg_match("!^(.+?)(?:\.([^.]+))?$!", $path, $path_split);
 		
 		$output = "";
 		if(isset($path_split[1]))
-		{
-			if(!$image && @file_get_contents($path_split[1].'.jpg',0,NULL,0,1))
+		{			
+			if(!$image && avia_is_200($path_split[1].'.jpg'))
 			{
 				$image = 'poster="'.$path_split[1].'.jpg"'; //poster image isnt accepted by the player currently, waiting for bugfix
 			}
 			
 			$uid = 'player_'.get_the_ID().'_'.mt_rand().'_'.mt_rand();
-		
-			$output .= '<video class="avia_video" '.$image.' controls id="'.$uid.'">';
+			
+			$output .= '<video class="avia_video" '.$image.' controls id="'.$uid.'" >';
 
 			foreach ($types as $key => $type)
 			{
-				if($path_split[2] == $key || @file_get_contents($path_split[1].'.'.$key,0,NULL,0,1)) 
+				if($path_split[2] == $key || avia_is_200($path_split[1].'.'.$key)) 
 				{  
 					$output .= '	<source src="'.$path_split[1].'.'.$key.'" '.$type.' />';
 				}
@@ -413,11 +480,60 @@ if(!function_exists('avia_html5_video_embed'))
 
 			$output .= '</video>';
 		}
+		
 		return $output;
 	}
 }
 
 
+if(!function_exists('avia_html5_audio_embed'))
+{
+	/**
+	 * Creates HTML 5 output and also prepares flash fallback for a audio of choice
+	 * @return string HTML5 audio element
+	 */
+	function avia_html5_audio_embed($path, $image = "", $types = array('mp3' => 'type="audio/mp3"'))
+	{	
+		
+		preg_match("!^(.+?)(?:\.([^.]+))?$!", $path, $path_split);
+		
+		$output = "";
+		if(isset($path_split[1]))
+		{			
+			$uid = 'player_'.get_the_ID().'_'.mt_rand().'_'.mt_rand();
+			
+			$output .= '<audio class="avia_audio" '.$image.' controls id="'.$uid.'" >';
+
+			foreach ($types as $key => $type)
+			{
+				if($path_split[2] == $key || avia_is_200($path_split[1].'.'.$key)) 
+				{  
+					$output .= '	<source src="'.$path_split[1].'.'.$key.'" '.$type.' />';
+				}
+			}
+
+			$output .= '</audio>';
+		}
+		
+		return $output;
+	}
+}
+
+
+if(!function_exists('avia_is_200'))
+{
+	function avia_is_200($url)
+	{
+	    $options['http'] = array(
+	        'method' => "HEAD",
+	        'ignore_errors' => 1,
+	        'max_redirects' => 0
+	    );
+	    $body = file_get_contents($url, NULL, stream_context_create($options), 0, 1);
+	    sscanf($http_response_header[0], 'HTTP/%*d.%*d %d', $code);
+	    return $code === 200;
+	}
+}
 
 
 
@@ -432,7 +548,7 @@ if(!function_exists('avia_get_link'))
 	* @param string $post_id if the function is called outside of the loop we might want to retrieve the permalink of a different post with this id
 	* @return string url (with image inside <a> tag if the image string was passed)
 	*/
-	function avia_get_link($option_array, $keyprefix, $inside = false, $post_id = false)
+	function avia_get_link($option_array, $keyprefix, $inside = false, $post_id = false, $attr = "")
 	{	
 		if(empty($option_array[$keyprefix.'link'])) $option_array[$keyprefix.'link'] = "";
 		
@@ -498,7 +614,7 @@ if(!function_exists('avia_get_link'))
 		}
 		else
 		{
-			return "<a href='".$url."'>".$inside."</a>";
+			return "<a $attr href='".$url."'>".$inside."</a>";
 		}
 	}
 }
@@ -693,7 +809,23 @@ if(!function_exists('avia_which_archive'))
 		} 
 		elseif (is_search()) 
 		{
-			$output = __('Search results for: ','avia_framework').$_GET['s']; 
+			global $wp_query;
+			if(!empty($wp_query->found_posts))
+			{
+				if($wp_query->found_posts > 1)
+				{
+					$output =  $wp_query->found_posts ." ". __('search results for: ','avia_framework').esc_attr($_GET['s']); 
+				}
+				else
+				{
+					$output =  $wp_query->found_posts ." ". __('search result for: ','avia_framework').esc_attr($_GET['s']); 
+				}
+			}
+			else
+			{
+				$output = __('Search results for: ','avia_framework').esc_attr($_GET['s']); 
+			}
+			
 		} 
 		elseif (is_author()) 
 		{ 
@@ -810,13 +942,14 @@ if(!function_exists('avia_excerpt'))
 
 if(!function_exists('avia_get_browser'))
 {
-	function avia_get_browser($returnValue = 'class')
+	function avia_get_browser($returnValue = 'class', $lowercase = false)
 	{
 		if(empty($_SERVER['HTTP_USER_AGENT'])) return false;
 		
 	    $u_agent = $_SERVER['HTTP_USER_AGENT'];
 	    $bname = 'Unknown';
 	    $platform = 'Unknown';
+	    $ub = 'Unknown';
 	    $version= "";
 	
 	    //First get the platform?
@@ -898,17 +1031,104 @@ if(!function_exists('avia_get_browser'))
 	   	
 	   	if($returnValue == 'class')
 	   	{
+	   		if($lowercase) return strtolower($ub." ".$ub.$mainVersion);
+	   	
 	   		return $ub." ".$ub.$mainVersion;
 	   	}
 	   	else
 	   	{
 		    return array(
-		        'userAgent' => $u_agent,
-		        'name'      => $bname,
-		        'version'   => $version,
-		        'platform'  => $platform,
-		        'pattern'   => $pattern
+		        'userAgent' 	=> $u_agent,
+		        'name'      	=> $bname,
+		        'shortname' 	=> $ub,
+		        'version'   	=> $version,
+		        'mainversion'	=> $mainVersion,
+		        'platform'  	=> $platform,
+		        'pattern'   	=> $pattern
 		    );
 	    }
 	} 
 }
+
+
+if(!function_exists('avia_favicon'))
+{
+	function avia_favicon($url = "")
+	{
+		$icon_link = "";
+		if($url)
+		{
+			$type = "image/x-icon";
+			if(strpos($url,'.png' )) $type = "image/png";
+			if(strpos($url,'.gif' )) $type = "image/gif";
+		
+			$icon_link = '<link rel="icon" href="'.$url.'" type="'.$type.'">';
+		}
+		
+		return $icon_link;
+	}
+}
+
+if(!function_exists('avia_regex'))
+{
+	/*
+	*	regex for url: http://mathiasbynens.be/demo/url-regex
+	*/
+
+	function avia_regex($string, $pattern = false, $start = "^", $end = "")
+	{
+		if(!$pattern) return false;
+		
+		if($pattern == "url") 
+		{
+			$pattern = "!$start((https?|ftp)://(-\.)?([^\s/?\.#-]+\.?)+(/[^\s]*)?)$end!";
+		}
+		else if($pattern == "mail")
+		{
+			$pattern = "!$start\w[\w|\.|\-]+@\w[\w|\.|\-]+\.[a-zA-Z]{2,4}$end!";
+		}
+		else if($pattern == "image")
+		{
+			$pattern = "!$start(https?(?://([^/?#]*))?([^?#]*?\.(?:jpg|gif|png)))$end!";
+		}
+		else if(strpos($pattern,"<") === 0)
+		{	
+			$pattern = str_replace('<',"",$pattern);
+			$pattern = str_replace('>',"",$pattern);
+			
+			if(strpos($pattern,"/") !== 0) { $close = "\/>"; $pattern = str_replace('/',"",$pattern); }
+			$pattern = trim($pattern);
+			if(!isset($close)) $close = "<\/".$pattern.">";
+			
+			$pattern = "!$start\<$pattern.+?$close!";
+			
+		}
+		
+		preg_match($pattern, $string, $result);
+		
+		if(empty($result[0]))
+		{
+			return false;
+		}
+		else
+		{
+			return $result;
+		}
+		
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

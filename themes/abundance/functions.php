@@ -46,6 +46,10 @@ avia_backend_add_thumbnail_size($avia_config);
 
 
 
+/*
+ * compat mode for easier theme switching from one avia framework theme to another
+ */
+add_theme_support( 'avia_post_meta_compat'); 
 
 ##################################################################
 # Frontend Stuff necessary for the theme:
@@ -116,13 +120,29 @@ function avia_upload_mimes($mimes){ return array_merge($mimes, array ('mp4' => '
 add_action('avia_backend_theme_activation', 'avia_set_thumb_size');
 function avia_set_thumb_size() {update_option( 'thumbnail_size_h', 80 ); update_option( 'thumbnail_size_w', 80 );}
 
-//remove post thumbnails from page and posts
-add_theme_support( 'post-thumbnails' );
-add_action('posts_selection', 'avia_remove_post_thumbnails');
-function avia_remove_post_thumbnails() 
+//remove post thumbnails from pages, posts and various custom post types
+if(!function_exists('avia_remove_post_thumbnails'))
 {
-	global $post_type;
-	if(is_admin() && ($post_type == 'post' || $post_type == 'page')) { remove_theme_support( 'post-thumbnails' ); }
+	add_theme_support( 'post-thumbnails' );
+	
+	add_action('posts_selection', 'avia_remove_post_thumbnails');
+	add_action('init', 'avia_remove_post_thumbnails');
+	add_filter('post_updated_messages','avia_remove_post_thumbnails');
+	function avia_remove_post_thumbnails($msg) 
+	{
+		global $post_type;
+		$remove_when = array('post','page');
+
+		if(is_admin())
+		{
+			foreach($remove_when as $remove)
+			{
+				if($post_type == $remove || (isset($_GET['post_type']) && $_GET['post_type'] == $remove)) { remove_theme_support( 'post-thumbnails' ); };
+			}
+		}
+		
+		return $msg;
+	}
 }
 
 
@@ -145,7 +165,6 @@ function avia_title($post = "", $_product = "", $title = "")
 	echo '<h1 class="page-title">'.$title.'</h1>';
 	if($_product && is_singular())  
 	{
-		echo '<span class="amount" style="color: #662D91; font-size: 20px;">' . $_product->get_sku() . '</span>';
 		echo "<div class='price_container'>";
 		woocommerce_template_single_price($post, $_product);
 		echo "</div>";
@@ -153,37 +172,26 @@ function avia_title($post = "", $_product = "", $title = "")
 	echo "</div>";
 }
 
-/**
- * Shows accessories that they can add to the cart
- *
- * @author Jonathon McDonald <jon@onewebcentric.com>
- */
-function jm_show_accessories()
-{
-	global $woocommerce, $product, $woocommerce_loop;
 
-	$crosssells = $product->get_cross_sells();
-	if (sizeof($crosssells)!=0) 
+
+/*wordpress 3.4 changed 404 check -  this is the mod for the avia framework to operate*/
+function avia_disable_404( $query = false ) {
+
+	global $avia_config, $wp_query;
+	
+	if(!isset($avia_config['first_query_run']) && is_front_page() && is_paged())
 	{
-		?>
-		<div class="upsells products" style="margin:0 0 1em 0;">
-			<h2><?php _e('Options', 'woocommerce') ?></h2>
-			<?php
-			$args = array(
-				'post_type'	=> 'product',
-				'ignore_sticky_posts'	=> 1,
-				'posts_per_page' => 4,
-				'no_found_rows' => 1,
-				'orderby' => 'rand',
-				'post__in' => $crosssells
-			);
-			query_posts($args);
-			woocommerce_get_template_part( 'loop', 'options' );
-			wp_reset_query();
-			?>
-		</div>
-		<?php
+		$wp_query->is_paged = false;
+		$avia_config['first_query_run'] = true;
+		add_action( 'wp', 'avia_enable_404' );
 	}
 }
-add_action('jm_show_accessories', 'jm_show_accessories');
-?>
+
+function avia_enable_404() {
+
+	global $wp_query;
+	$wp_query->is_paged = true;
+	
+}
+
+add_action( 'pre_get_posts', 'avia_disable_404' ,1 ,10000);

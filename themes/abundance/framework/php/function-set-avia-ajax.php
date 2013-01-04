@@ -10,14 +10,31 @@
  * @package 	AviaFramework
  */
 
+
+/**
+ * Helper that decodes ajax submitted forms
+ */
+function ajax_decode_deep($value)
+{
+	$charset = get_bloginfo('charset');
+    $value = is_array($value) ? array_map('ajax_decode_deep', $value) : stripslashes(htmlentities(urldecode($value), ENT_QUOTES, $charset));
+    return $value;
+}
+
+
+
 /**
  * This function modifies the option array based on an ajax request and returns the modified option array to the browser
  * If the add method is set the function also returns the element that should be added so jquery can inject it to the dom
  */
+
+ 
 if(!function_exists('avia_ajax_modify_set'))
 {
 	function avia_ajax_modify_set()
-	{
+	{	
+		if(isset($_POST['ajax_decode'])) $_POST = ajax_decode_deep($_POST);
+	
 		//add a new set
 		if($_POST['method'] == 'add')
 		{
@@ -55,7 +72,28 @@ if(!function_exists('avia_ajax_modify_set'))
 					$sets->add_element_to_db($element, $_POST);
 				}
 				
+				if(isset($_POST['std']))
+				{
+					$element['std'][0] = $_POST['std'];
+				}
+				
+				if(isset($_POST['apply_all']))
+				{
+					$element['apply_all'] = $_POST['apply_all'];
+				}
+				
+				
 				$element['ajax_request'] = 1;
+				
+				
+				
+				if(isset($_POST['activate_filter']))
+				{
+					add_filter('avia_ajax_render_element_filter', $_POST['activate_filter'], 10, 2);
+				}
+				
+				$element = apply_filters('avia_ajax_render_element_filter', $element, $_POST);
+				
 				//render element for output
 				echo "{avia_ajax_element}" .$html->render_single_element($element) ."{/avia_ajax_element}";
 				
@@ -69,6 +107,30 @@ if(!function_exists('avia_ajax_modify_set'))
 	//hook into wordpress admin.php
 	add_action('wp_ajax_avia_ajax_modify_set', 'avia_ajax_modify_set');
 }
+
+//helper function for the gallery that fetches all image atachment ids of a post
+function avia_ajax_fetch_all($element, $sent_data)
+{
+	$post_id = $sent_data['apply_all'];
+	$args = array( 'post_type' => 'attachment', 'numberposts' => -1, 'post_status' => null, 'post_parent' => $post_id); 
+	$attachments = get_posts($args);
+	
+
+	if($attachments && is_array($attachments))
+	{
+		$counter = 0;
+		$element['ajax_request'] = count($attachments);
+		foreach($attachments as $attachment)
+		{
+			$element['std'][$counter]['slideshow_image'] = $attachment->ID;
+			$counter++;
+		}
+	}
+
+
+	return $element;
+}
+
 
 
 /**
@@ -132,13 +194,16 @@ if(!function_exists('avia_ajax_save_options_page'))
 			update_option($optionkey.'_dynamic_elements', $options);
 		}
 
-
+		
+		//hook in case we want to do somethin with the new options
+		do_action( 'avia_ajax_save_options_page', $current_options );
+		
 		//remove old option set and save those key/value pairs in the database
 		update_option($optionkey, $current_options);	
 		
-		
 		//flush rewrite rules for custom post types
 		update_option('avia_rewrite_flush', 1);
+		
 		
 		die('avia_save');
 	}
@@ -253,7 +318,10 @@ if(!function_exists('avia_ajax_reset_options_page'))
 		
 		//flush rewrite rules for custom post types
 		update_option('avia_rewrite_flush', 1);
-
+		
+		//hook in case user wants to execute code afterwards
+		do_action('avia_ajax_reset_options_page');
+		
 		//end php execution and return avia_reset to the javascript
 		die('avia_reset');
 	}

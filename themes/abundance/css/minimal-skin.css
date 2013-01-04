@@ -537,7 +537,7 @@ color: #999;
 COMMENTS
 *************************************************************************/
 
-#comments span, .minitext{
+.comment-entry #comments span, .minitext{
 color:#999;
 }
 

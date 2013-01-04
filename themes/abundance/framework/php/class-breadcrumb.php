@@ -191,7 +191,8 @@ function avia_breadcrumbs( $args = array() ) {
 		'front_page' => true,
 		'show_home' => __( 'Home', $textdomain ),
 		'echo' => false, 
-		'show_posts_page' => true
+		'show_posts_page' => true,
+		'truncate' => 70
 	);
 	
 
@@ -452,7 +453,7 @@ function avia_breadcrumbs( $args = array() ) {
 
 		/* Wrap the $trail['trail_end'] value in a container. */
 		if ( !empty( $trail['trail_end'] ) )
-			$trail['trail_end'] = '<span class="trail-end">' . $trail['trail_end'] . '</span>';
+			$trail['trail_end'] = '<span class="trail-end">' . avia_backend_truncate($trail['trail_end'], $truncate, " ", $pad="...")  . '</span>';
 
 		/* Format the separator. */
 		if ( !empty( $separator ) )

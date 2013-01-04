@@ -7,6 +7,7 @@ document.documentElement.className += 'js_active';
 jQuery.noConflict();
 jQuery(document).ready(function(){
 
+	
 	//activates the mega menu javascript
 	if(jQuery.fn.aviaMegamenu)		
 	jQuery(".main_menu .avia_mega, .sub_menu>ul, .sub_menu>div>ul").aviaMegamenu({modify_position:true});
@@ -175,12 +176,14 @@ function avia_ie_fix()
 		
 		return this.each(function()
 		{
-			var menu = $(this),
+			var isMobile 	= 'ontouchstart' in document.documentElement,
+				menu = $(this),
 				menuItems = menu.find(">li"),
 				megaItems = menuItems.find(">div").parent().css({overflow:'hidden'}),
 				dropdownItems = menuItems.find(">ul").parent(),
 				parentContainerWidth = menu.parent().width(),
-				delayCheck = {};
+				delayCheck = {},
+				mega_open = [];
 
 			
 			menuItems.each(function()
@@ -229,7 +232,7 @@ function avia_ie_fix()
 				{
 					var item = megaItems.filter(':eq('+i+')').css({overflow:'visible'}).find("div:first"),
 						link = megaItems.filter(':eq('+i+')').find("a:first");
-						
+						mega_open["check"+i] = true;
 						
 						item.stop().css('display','block').animate({opacity:1},300);
 						
@@ -254,8 +257,20 @@ function avia_ie_fix()
 					{
 						$(this).css('display','none');
 						listItem.css({overflow:'hidden'});
+						mega_open["check"+i] = false;
 					});
 				}
+			}
+
+			if(isMobile)
+			{
+				megaItems.each(function(i){
+				
+					$(this).bind('click', function()
+					{
+						if(mega_open["check"+i] != true) return false;
+					});
+				});
 			}
 
 
@@ -273,7 +288,7 @@ function avia_ie_fix()
 					function()
 					{
 						delayCheck[i] = false;
-						setTimeout(function(){megaDivHide(i); },options.delay);					
+						setTimeout(function(){megaDivHide(i); },options.delay);
 					}
 				);
 			});

@@ -24,7 +24,6 @@
                         'orderby' => 'menu_order ID'));
                 if(is_array($attachments))
                 {
-                	echo "<div class='footer-header'><div class='container'><h2>Current Customers</h2></div></div>";
                 	echo "<div class='footer-logos'><div class='container'>";
 	                foreach($attachments as $key => $attachment) 
 					{
@@ -86,7 +85,8 @@
 					<span class='copyright'>&copy; <?php _e('Copyright','avia_framework'); ?> - <a href='<?php echo home_url('/'); ?>'><?php echo get_bloginfo('name');?></a> - <a href='http://www.kriesi.at'>Wordpress Theme by Kriesi.at</a></span>
 				
 					<ul class="social_bookmarks">
-							<?php 
+							<?php do_action('avia_add_social_icon','footer');
+
 							echo "<li class='phone'><a href='#top'>".__('scroll to top','avia_framework')."</a></li>"; 
 							
 							//contact icon
@@ -145,5 +145,7 @@
 	
 	
 ?>
+</div>
+
 </body>
 </html>

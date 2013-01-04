@@ -157,6 +157,9 @@ class WXR_Parser_SimpleXML {
 			$post['post_password'] = (string) $wp->post_password;
 			$post['is_sticky'] = (int) $wp->is_sticky;
 
+			if ( isset($wp->attachment_url) )
+				$post['attachment_url'] = (string) $wp->attachment_url;
+
 			foreach ( $item->category as $c ) {
 				$att = $c->attributes();
 				if ( isset( $att['nicename'] ) )
@@ -170,11 +173,21 @@ class WXR_Parser_SimpleXML {
 			foreach ( $wp->postmeta as $meta ) {
 				$post['postmeta'][] = array(
 					'key' => (string) $meta->meta_key,
-					'value' => (string) $meta->meta_value,
+					'value' => (string) $meta->meta_value
 				);
 			}
 
 			foreach ( $wp->comment as $comment ) {
+				$meta = array();
+				if ( isset( $comment->commentmeta ) ) {
+					foreach ( $comment->commentmeta as $m ) {
+						$meta[] = array(
+							'key' => (string) $m->meta_key,
+							'value' => (string) $m->meta_value
+						);
+					}
+				}
+			
 				$post['comments'][] = array(
 					'comment_id' => (int) $comment->comment_id,
 					'comment_author' => (string) $comment->comment_author,
@@ -188,6 +201,7 @@ class WXR_Parser_SimpleXML {
 					'comment_type' => (string) $comment->comment_type,
 					'comment_parent' => (string) $comment->comment_parent,
 					'comment_user_id' => (int) $comment->comment_user_id,
+					'commentmeta' => $meta,
 				);
 			}
 
@@ -211,7 +225,7 @@ class WXR_Parser_SimpleXML {
  */
 class WXR_Parser_XML {
 	var $wp_tags = array(
-		'wp:post_id', 'wp:post_date', 'wp:post_date_gmt', 'wp:comment_status', 'wp:ping_status',
+		'wp:post_id', 'wp:post_date', 'wp:post_date_gmt', 'wp:comment_status', 'wp:ping_status', 'wp:attachment_url',
 		'wp:status', 'wp:post_name', 'wp:post_parent', 'wp:menu_order', 'wp:post_type', 'wp:post_password',
 		'wp:is_sticky', 'wp:term_id', 'wp:category_nicename', 'wp:category_parent', 'wp:cat_name', 'wp:category_description',
 		'wp:tag_slug', 'wp:tag_name', 'wp:tag_description', 'wp:term_taxonomy', 'wp:term_parent',
@@ -299,9 +313,16 @@ class WXR_Parser_XML {
 	function tag_close( $parser, $tag ) {
 		switch ( $tag ) {
 			case 'wp:comment':
+				unset( $this->sub_data['key'], $this->sub_data['value'] ); // remove meta sub_data
 				if ( ! empty( $this->sub_data ) )
 					$this->data['comments'][] = $this->sub_data;
 				$this->sub_data = false;
+				break;
+			case 'wp:commentmeta':
+				$this->sub_data['commentmeta'][] = array(
+					'key' => $this->sub_data['key'],
+					'value' => $this->sub_data['value']
+				);
 				break;
 			case 'category':
 				if ( ! empty( $this->sub_data ) ) {
@@ -441,11 +462,20 @@ class WXR_Parser_Regex {
 	}
 
 	function get_tag( $string, $tag ) {
-		global $wpdb;
 		preg_match( "|<$tag.*?>(.*?)</$tag>|is", $string, $return );
 		if ( isset( $return[1] ) ) {
-			$return = preg_replace( '|^<!\[CDATA\[(.*)\]\]>$|s', '$1', $return[1] );
-			$return = $wpdb->escape( trim( $return ) );
+			if ( substr( $return[1], 0, 9 ) == '<![CDATA[' ) {
+				if ( strpos( $return[1], ']]]]><![CDATA[>' ) !== false ) {
+					preg_match_all( '|<!\[CDATA\[(.*?)\]\]>|s', $return[1], $matches );
+					$return = '';
+					foreach( $matches[1] as $match )
+						$return .= $match;
+				} else {
+					$return = preg_replace( '|^<!\[CDATA\[(.*)\]\]>$|s', '$1', $return[1] );
+				}
+			} else {
+				$return = $return[1];
+			}
 		} else {
 			$return = '';
 		}
@@ -506,7 +536,7 @@ class WXR_Parser_Regex {
 		$menu_order     = $this->get_tag( $post, 'wp:menu_order' );
 		$post_type      = $this->get_tag( $post, 'wp:post_type' );
 		$post_password  = $this->get_tag( $post, 'wp:post_password' );
-		$is_sticky		= $this->get_tag( $post, 'wp:is_sticky' );
+		$is_sticky      = $this->get_tag( $post, 'wp:is_sticky' );
 		$guid           = $this->get_tag( $post, 'guid' );
 		$post_author    = $this->get_tag( $post, 'dc:creator' );
 
@@ -525,6 +555,10 @@ class WXR_Parser_Regex {
 			'menu_order', 'post_type', 'post_password', 'is_sticky'
 		);
 
+		$attachment_url = $this->get_tag( $post, 'wp:attachment_url' );
+		if ( $attachment_url )
+			$postdata['attachment_url'] = $attachment_url;
+
 		preg_match_all( '|<category domain="([^"]+?)" nicename="([^"]+?)">(.+?)</category>|is', $post, $terms, PREG_SET_ORDER );
 		foreach ( $terms as $t ) {
 			$post_terms[] = array(
@@ -539,6 +573,16 @@ class WXR_Parser_Regex {
 		$comments = $comments[1];
 		if ( $comments ) {
 			foreach ( $comments as $comment ) {
+				preg_match_all( '|<wp:commentmeta>(.+?)</wp:commentmeta>|is', $comment, $commentmeta );
+				$commentmeta = $commentmeta[1];
+				$c_meta = array();
+				foreach ( $commentmeta as $m ) {
+					$c_meta[] = array(
+						'key' => $this->get_tag( $m, 'wp:meta_key' ),
+						'value' => $this->get_tag( $m, 'wp:meta_value' ),
+					);
+				}
+
 				$post_comments[] = array(
 					'comment_id' => $this->get_tag( $comment, 'wp:comment_id' ),
 					'comment_author' => $this->get_tag( $comment, 'wp:comment_author' ),
@@ -551,6 +595,8 @@ class WXR_Parser_Regex {
 					'comment_approved' => $this->get_tag( $comment, 'wp:comment_approved' ),
 					'comment_type' => $this->get_tag( $comment, 'wp:comment_type' ),
 					'comment_parent' => $this->get_tag( $comment, 'wp:comment_parent' ),
+					'comment_user_id' => $this->get_tag( $comment, 'wp:comment_user_id' ),
+					'commentmeta' => $c_meta,
 				);
 			}
 		}

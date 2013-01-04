@@ -3,7 +3,7 @@ jQuery(document).ready(function($) {
 	cart_improvement_functions();
 	cart_button_animation();
 	cart_dropdown_improvement();
-	avia_select_unify('select');
+	avia_select_unify('select:not(.checkout select)');
 	avia_cloud_zoom('.cloudzoom_active .images>a', '.cloudzoom_active .thumbnails');
 	$('body').bind('added_to_cart', update_cart_dropdown);
 
@@ -41,7 +41,7 @@ function cart_improvement_functions()
 //improve layout of select dropdowns
 function avia_select_unify(select_el)
 {
-	var selects = jQuery(select_el);
+	var selects = jQuery(select_el).not('#rating');
 
 	 //unify select dropdowns
     selects.each(function()

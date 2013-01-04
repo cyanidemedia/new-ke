@@ -109,8 +109,8 @@ if( !class_exists( 'avia_meta_box' ) )
 			
 			if(isset($boxes) && isset($elements))
 			{
-				$this->default_boxes = $boxes;
-				$this->box_elements  = $elements;
+				$this->default_boxes = apply_filters('avia_metabox_filter',$boxes);
+				$this->box_elements  = apply_filters('avia_metabox_element_filter',$elements);
 				
 				//loop over the box array
 				foreach($this->default_boxes as $key => $box)
@@ -146,7 +146,15 @@ if( !class_exists( 'avia_meta_box' ) )
 			
 			if(!is_object($post)) return;
 			
-			$custom_fields = get_post_meta($post->ID, '_avia_elements_'.$this->superobject->option_prefix, true);
+			$key = '_avia_elements_'.$this->superobject->option_prefix;
+			
+			if(current_theme_supports( 'avia_post_meta_compat' )) 
+			{
+				$key = '_avia_elements_theme_compatibility_mode'; //actiavates a compatibility mode for easier theme switching and keeping post options
+			}
+
+			
+			$custom_fields = get_post_meta($post->ID, $key, true);
 			$custom_fields = apply_filters('avia_meta_box_filter_custom_fields', $custom_fields, $post->ID);
 			
 
@@ -181,7 +189,6 @@ if( !class_exists( 'avia_meta_box' ) )
 				$this->hidden_data_set = true;
 			}
 			echo $output;
-			
 			
 		}
 		
@@ -225,6 +232,7 @@ if( !class_exists( 'avia_meta_box' ) )
 				//does the user have the capability?
 				if ( !current_user_can( $capability, $post_id  )) return $post_id ;
 				
+
 				
 				$this->saved = true;
 				$meta_array = array();
@@ -234,7 +242,14 @@ if( !class_exists( 'avia_meta_box' ) )
 					foreach($_POST as $key=>$value)
 					{
 						if(strpos($key, $box['id']) !== false)
-						{
+						{							
+							if(strpos($key, 'on_save_') !== false)
+							{
+								$function = str_replace('on_save_', "", $key);
+								$meta_array = apply_filters('avia_filter_save_meta_box_'.$function, $meta_array, $_POST);
+							}
+						
+						
 							$meta_array[$key] = $value;
 						}
 					}

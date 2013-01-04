@@ -52,16 +52,35 @@ var scnDialogHelper = {
                 case "tab-control":
                     this.createTabControl(a[c], f, c == 0);
                     break;
+                case "table-control":
+                    this.createTableControl(a[c], f, c == 0);
+                    break;
+               case "sidebar-tab-control":
+                    this.createsbTabControl(a[c], f, c == 0);
+                    break;
                 }
                 jQuery("<tr/>").append(g).append(f).appendTo(b)
             }
             jQuery(".scn-focus-here:first").focus()
         }
     },
+     createsbTabControl: function (a, b, c) {
+        new scnSBTabMaker(b, 20, c ? "scn-focus-here" : null);
+        b.addClass("scn-marker-sidebar-tab-control")
+    },
+    
     createColumnControl: function (a, b, c) {
+        
         new ScnColumnMaker(b, 5, c ? "scn-focus-here" : null);
         b.addClass("scn-marker-column-control")
     },
+    
+     createTableControl: function (a, b, c) {
+          
+        new ScnTableMaker(b, 5, c ? "scn-focus-here" : null);
+        b.addClass("scn-marker-table-control")
+    },
+    
     createTextControl: function (a, b, c) {
         var f = a.validatelink ? "scn-validation-marker" : "",
             d = a.isRequired ? "scn-required" : "",
@@ -167,15 +186,53 @@ var scnDialogHelper = {
             }
         }
     },
+    
+    getsidebarTabKeyValue: function (a) {
+    
+        var b = a.find("#scn-tab-text").text();
+        var x = a.parents('#scn-options-table').find("select[name='scn_tab_icon']");
+       
+        if (a = Number(a.find("select option:selected").val())) return {
+            key: "data",
+            value: {
+                content: b,
+                icons: x,
+                numTabs: a
+            }
+        }
+    },
+    
+    getTableKeyValue: function (a) {
+    
+    	var table_data = a.parents('#TB_window:eq(0)').find('#top .avia_table');
+    	
+    	table_data.find('table').removeClass('undefined scn-generated-table');
+    
+        if (table_data.length) return {
+            key: "data",
+            value: {
+                table: table_data,
+                html: table_data.html()
+            }
+        }
+    },
+    
     makeShortcode: function () {
         var a = {},
             b = this;
+            
         jQuery("#scn-options-table td").each(function () {
             var h = jQuery(this),
                 e = null;
+                
             if (e = h.hasClass("scn-marker-column-control") ? b.getColumnKeyValue(h) : b.getTextKeyValue(h)) a[e.key] = e.value
             if (e = h.hasClass("scn-marker-select-control") ? b.getSelectKeyValue(h) : b.getTextKeyValue(h)) a[e.key] = e.value
             if (e = h.hasClass("scn-marker-tab-control") ? b.getTabKeyValue(h) : b.getTextKeyValue(h)) a[e.key] = e.value
+            if (e = h.hasClass("scn-marker-sidebar-tab-control") ? b.getsidebarTabKeyValue(h) : b.getTextKeyValue(h)) a[e.key] = e.value
+            if (e = h.hasClass("scn-marker-table-control") ? b.getTableKeyValue(h) : b.getTextKeyValue(h)) a[e.key] = e.value
+        
+        
+        
         });
         
         if (scnShortcodeMeta.customMakeShortcode) return scnShortcodeMeta.customMakeShortcode(a);

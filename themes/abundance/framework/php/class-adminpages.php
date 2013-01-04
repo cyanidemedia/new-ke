@@ -80,7 +80,7 @@ if( ! class_exists( 'avia_adminpages' ) )
 			foreach ( $files as $index => $file ) 
 			{ 
 				$file_info = pathinfo($file);
-				if($file_info['extension'] == "css")
+				if(isset($file_info['extension']) && $file_info['extension'] == "css")
 				{
 					$filename = basename($file_info['basename'], ".".$file_info['extension']) ;
 					wp_enqueue_style($filename , AVIA_CSS_URL . $file); 
@@ -129,10 +129,12 @@ if( ! class_exists( 'avia_adminpages' ) )
 			
 				//if its the very first option item make it a main menu with theme or plugin name, then as first submenu add it again with real menu name 
 				if($key === 0)
-				{
+				{	
+					$the_title = apply_filters( 'avia_filter_backend_page_title', $this->avia_superobject->base_data['Title'] );
+				
 					$top_level = $data_set['slug'];
-					$avia_page = $page_creation_method(	$this->avia_superobject->base_data['prefix'], 	// page title
-														$this->avia_superobject->base_data['prefix'], 	// menu title
+					$avia_page = $page_creation_method(	$the_title, 									// page title
+														$the_title, 									// menu title
 														'manage_options', 								// capability
 														$top_level, 									// menu slug (and later also database options key)
 														array(&$this, 'render_page')					// executing function
@@ -141,6 +143,7 @@ if( ! class_exists( 'avia_adminpages' ) )
 				
 				if($data_set['parent'] == $data_set['slug'])
 				{
+				
 					$avia_page = add_submenu_page(	$top_level,								// parent page slug to attach
 													$data_set['title'], 					// page title
 													$data_set['title'], 					// menu title

@@ -533,13 +533,16 @@ class avia_dynamic_template
 		if($shop_text == 'yes') $avia_config['shop_overview_excerpt'] = 'active';
 		$woocommerce_loop['columns'] = $avia_config['shop_overview_column'] = $shop_columns;
 	
+		$order = get_option('woocommerce_default_catalog_orderby');
+		if(!$order) $order = "menu_order";
+
 		$avia_config['new_query'] = array(
 			'post_type'	=> 'product',
 			'post_status' => 'publish',
 			'ignore_sticky_posts'	=> 1,
 			"paged" => get_query_var( 'paged' ),
 			'posts_per_page' => $shop_item_count,
-			'orderby' => 'id',
+			'orderby' => $order,
 			'order' => 'desc',
 			'meta_query' => array(
 				array(
@@ -566,7 +569,38 @@ class avia_dynamic_template
 		
 		query_posts($avia_config['new_query']);
 		ob_start();
-		woocommerce_get_template_part( 'loop', 'shop' );
+		
+		if ( have_posts() ) :
+
+		do_action('woocommerce_before_shop_loop');
+	
+		echo '<ul class="products">';
+		
+			woocommerce_product_subcategories();
+	
+				while ( have_posts() ) : the_post();
+	
+					woocommerce_get_template_part( 'content', 'product' );
+	
+				endwhile; // end of the loop. 
+			
+		echo '</ul>';
+	
+		do_action('woocommerce_after_shop_loop');
+	
+		else : 
+		
+			if ( ! woocommerce_product_subcategories( array( 'before' => '<ul class="products">', 'after' => '</ul>' ) ) ) : 
+					
+				echo "<p>".__( 'No products found which match your selection.', 'woocommerce' )."</p>";
+					
+			 endif; 
+		
+		endif; 
+		
+		echo '<div class="clear"></div>';
+		
+		
 		$products = ob_get_clean();
 		
 		

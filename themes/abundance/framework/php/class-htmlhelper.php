@@ -71,7 +71,8 @@ if( ! class_exists( 'avia_htmlhelper' ) )
 			$this->avia_superobject = $avia_superobject;
 			
 			$options = get_option($this->avia_superobject->option_prefix);
-
+			
+			
 			//check which option pages were already saved yet and need replacement of the default values
 			foreach($avia_superobject->option_pages as $page)
 			{
@@ -178,6 +179,7 @@ if( ! class_exists( 'avia_htmlhelper' ) )
 				
 				//check if its a dynamic (sortable) element	
 				$dynamic_end = "";
+				
 				if($element['dynamic'])
 				{
 					$output .= '<div class="avia_row">';
@@ -223,7 +225,8 @@ if( ! class_exists( 'avia_htmlhelper' ) )
          
 		function group( $element )
 		{	
-		
+
+			
 			$iterations = 1;
 			$output = "";
 			$real_id = $element['id'];
@@ -249,22 +252,8 @@ if( ! class_exists( 'avia_htmlhelper' ) )
 				$output   .= '<div class="avia_set '.$element['class'].'" id="avia_'.$element['id'].'">';
 		
 				$output   .= '<div class="avia_single_set">';
-				foreach($element['subelements'] as $key => $subelement)
-				{
-					if(isset($element['std']) && is_array($element['std']) && isset($element['std'][$i][$subelement['id']]))
-					{
-						$subelement['std'] = $element['std'][$i][$subelement['id']];
-					}
-					
-					if(isset($element['ajax_request']))
-					{
-						$subelement['ajax_request'] = $element['ajax_request'];
-					}
-					
-					$subelement['subgroup_item'] = true;
-					$subelement['id'] = $element['id']."-__-".$subelement['id'];
-					$output  .=      $this->render_single_element($subelement);
-				}
+				
+				$output	 .= $this->get_subelements($element, $i);
 				
 				$output  .= '	<span class="avia_clone_loading avia_hidden" href="#">Loading</span>';
 				$output  .= '	<a class="avia_clone_set" href="#">'.$element['linktext'].'</a>';
@@ -274,6 +263,36 @@ if( ! class_exists( 'avia_htmlhelper' ) )
 			}
 			
 			
+			return $output;
+		}
+		
+		/**
+         * Creates the subelements for groups and specail objects like gallery upload
+         * @param array $element the array holds data like id, class and some js settings
+         * @return string $output the string returned contains the html code generated within the method
+         */
+		function get_subelements($element, $i = 1)
+		{
+			$output = "";
+					
+			foreach($element['subelements'] as $key => $subelement)
+			{
+				if(isset($element['std']) && is_array($element['std']) && isset($element['std'][$i][$subelement['id']]))
+				{
+					$subelement['std'] = $element['std'][$i][$subelement['id']];
+				}
+				
+				if(isset($element['ajax_request']))
+				{
+					$subelement['ajax_request'] = $element['ajax_request'];
+				}
+				
+				$subelement['subgroup_item'] = true;
+				$subelement['id'] = $element['id']."-__-".$subelement['id'];
+				
+				if(isset($element['apply_all'])) $subelement['apply_all'] = $element['apply_all'];
+				$output  .=      $this->render_single_element($subelement);
+			}
 			
 			return $output;
 		}
@@ -319,11 +338,14 @@ if( ! class_exists( 'avia_htmlhelper' ) )
          * @return string $output the string returned contains the html code generated within the method
          */
 		function text( $element )
-		{			
-			$output  =  '<span class="avia_style_wrap">'; 
-			$output .= 	'<input type="text" class="'.$element['class'].'" value="'.$element['std'].'" id="'.$element['id'].'" name="'.$element['id'].'"/>';
-			$output .=  '</span>'; 
-			return $output;
+		{	
+			$extraClass = "";
+			if(isset($element['class_on_value']) && !empty($element['std'])) $extraClass = " ".$element['class_on_value'];
+			
+			$text = '<input type="text" class="'.$element['class'].$extraClass.'" value="'.$element['std'].'" id="'.$element['id'].'" name="'.$element['id'].'"/>';
+			
+			if(isset($element['simple'])) return $text;
+			return '<span class="avia_style_wrap">'.$text.'</span>';
 		}
 		
 		
@@ -395,7 +417,7 @@ if( ! class_exists( 'avia_htmlhelper' ) )
          * @return string $output the string returned contains the html code generated within the method
          */
 		function textarea( $element )
-		{			
+		{	
 			$output  = '<textarea rows="5" cols="30" class="'.$element['class'].'" id="'.$element['id'].'" name="'.$element['id'].'">';
 			$output .= $element['std'].'</textarea>';
 			return $output;
@@ -498,7 +520,7 @@ if( ! class_exists( 'avia_htmlhelper' ) )
 				}
 				else
 				{
-					if(!preg_match('!\.jpg$|\.jpeg$|\.png$|\.gif$!', $element['std']) && $element['std'] != "" )
+					if(!preg_match('!\.jpg$|\.jpeg$|\.ico$|\.png$|\.gif$!', $element['std']) && $element['std'] != "" )
 					{
 						$prevImg = '<a href="#" class="avia_remove_image">remove</a><img src="'.AVIA_IMG_URL.'icons/video.png" alt="" />';
 					}
@@ -555,6 +577,146 @@ if( ! class_exists( 'avia_htmlhelper' ) )
 			return $output;
 		}
 		
+		/**
+         * 
+         * The upload gallery method renders a single upload element so users can add their own pictures and/or videos
+         *
+         * @param array $element the array holds data like type, value, id, class, description which are necessary to render the whole option-section
+         * @return string $output the string returned contains the html code generated within the method
+         */
+		function upload_gallery( $element )
+		{
+			//first gernerate the sub_item_output
+			$sub_output = "";
+			$iterations = 0;
+			$real_id = $element['id'];
+			
+			if((isset($element['std']) && is_array($element['std'])) && !isset($element['ajax_request']))
+			{
+				if(!empty($element['std'][0]['slideshow_image']) || !empty($element['std'][0]['slideshow_video']))
+				{
+					$iterations = count($element['std']);
+				}
+			}
+			
+			$video_button = "Add external video by URL";
+			if(isset($element['button_video'])) $video_button = $element['button_video']; // ajax requests usually need only one element per default
+			if(isset($element['ajax_request'])) $iterations = $element['ajax_request']; // ajax requests usually need only one element per default
+			
+			for ($i = 0; $i < $iterations; $i++)
+			{
+				//start generating html output
+				
+				$element['id'] = $real_id.'-__-'.$i;
+				
+				$sub_output  .= '<div class="avia_set avia_row '.$element['class'].'" id="avia_'.$element['id'].'" >';
+				$sub_output  .= 	'<div class="avia_single_set"><div class="avia_handle"></div>';
+				$sub_output	 .= 		$this->get_subelements($element, $i);
+				$sub_output  .= '		<a class="avia_remove_set remove_all_allowed" href="#">'.__('(remove)').'</a>';
+				$sub_output  .= '		<a class="open_set" data-openset="'.__('Show').'" data-closedset="'.__('Hide').'" href="#">'.__('Show').'</a>';
+				$sub_output  .= 	'</div>';
+				$sub_output  .= '</div>';
+			}
+			
+			//if this is an ajax request stop here
+			if(isset($element['ajax_request'])) return $sub_output;
+			
+			
+			global $post_ID;
+			//if we want to retrieve the whole element and this is not an ajax call do the following as well:
+			if(empty($element['button-label'])) $element['button-label'] = "Add Image to slideshow";
+			$postId = $post_ID; //avia_media::get_custom_post($element['name']);
+			$output = "";
+			
+			$output .= '<div class="avia_gallery_upload_container avia_gallery_upload_container'.$postId.' avia_delay_required">';
+			$output .= '<div class="avia_sortable_gallery_container">';
+			
+			$output .= $sub_output; 
+
+			$output .= '</div>';
+			
+			$output .= '<div class="button_bar">';
+			$output .= '	<span class="avia_style_wrap avia_upload_style_wrap">';
+				//generate the upload link
+					$output .= '<a href="#" class="avia_button avia_gallery_uploader" title="'.$element['name'].'" id="avia_gallery_uploader '.$element['id'].'"';
+					$output .= 'data-label="'.$element['label'].'" ';
+					$output .= 'data-this-id="'.$element['id'].'" ';
+					$output .= 'data-attach-to-post = "'.$postId.'" ';
+					$output .= 'data-real-id="'.$real_id.'" ';
+					$output .= '>'.$element['button-label'].'</a>';
+				//end link
+			$output .= '	</span>';
+			
+			$output .= '	<span class="avia_style_wrap avia_upload_style_wrap">';
+				//generate the upload link
+					$output .= '<a href="#" class="avia_button avia_gallery_uploader" title="'.$element['name'].'" id="avia_gallery_uploader '.$element['id'].'"';
+					$output .= 'data-label="'.$element['label'].'" data-video-insert = "avia_video_insert"';
+					$output .= 'data-attach-to-post = "'.$postId.'" ';
+					$output .= 'data-real-id="'.$real_id.'" ';
+					$output .= 'data-this-id="'.$element['id'].'" ';
+					$output .= '>'.$video_button.'</a>';
+				//end link
+			$output .= '	</span>';
+			
+			
+			//delete button
+			$output .= '	<span class="avia_style_wrap avia_upload_style_wrap avia_delete_style_wrap">';
+				//generate the upload link
+					$output .= '<a href="#" class="avia_button avia_gallery_delete_all avia_button_grey" id="avia_gallery_delete_all"';
+					$output .= '>Remove All</a>';
+				//end link
+			$output .= '	</span>';
+			$output .= '</div>'; //end button bar
+			
+			
+			
+			$output .= '</div>';
+			return $output;
+		}
+		
+		
+		
+		//the gallery image is a helper to the upload_gallery method that displays a single image and enables you to change that image
+		function gallery_image($element)
+		{
+			$prevImg = $extraClass = "";
+			$real_id = explode('-__-', $element['id']);
+			$real_id = $real_id[0];
+			
+			global $post_ID;
+			if(empty($post_ID) && isset($element['apply_all'])) $post_ID = $element['apply_all'];
+			
+			if(!is_numeric($element['std']) || $element['std'] == '')
+			{
+				$prevImg = '<img src="'.AVIA_IMG_URL.'icons/video_insert_image.png" alt="" />';
+				$extraClass = " avia_gallery_image_vid";
+			}
+			else if($element['std'] != '')
+			{
+				$prevImg = wp_get_attachment_image($element['std'], array(100,100));
+				$extraClass = " avia_gallery_image_img";
+			}
+			
+		
+			$output ="";
+			$output .=' <div class="avia_gallery_image'.$extraClass.'">';
+			
+				//generate the upload link
+					$output .= '<a href="#" class="avia_gallery_uploader" title="'.$element['name'].'" id="avia_gallery_image '.$element['id'].'"';
+					$output .= 'data-label="'.$element['label'].'" ';
+					$output .= 'data-this-id="'.$element['id'].'" ';
+					$output .= 'data-attach-to-post = "'.$post_ID.'" ';
+					$output .= 'data-real-id="'.$real_id.'" ';
+					$output .= 'data-overwrite="true" ';
+					$output .= '>'.$prevImg.'</a>';
+					$output .= '<input type="text" class="avia_gallery_image_value '.$element['class'].'" value="'.$element['std'].'" name="'.$element['id'].'" id="'.$element['id'].'" />';
+				//end link
+			
+			$output .= '</div>';
+			return $output;
+		}
+		
+		
 		
 		/**
          * 
@@ -588,7 +750,7 @@ if( ! class_exists( 'avia_htmlhelper' ) )
          * @return string $output the string returned contains the html code generated within the method
          */
 		function select( $element )
-		{			
+		{	
 			if($element['subtype'] == 'page')
 			{
 				$select = 'Select page';
@@ -629,6 +791,15 @@ if( ! class_exists( 'avia_htmlhelper' ) )
 				}
 			}
 			
+			
+			//check for onchange function
+			$onchange = "";
+			if(isset($element['onchange'])) 
+			{
+				$onchange = " data-avia-onchange='".$element['onchange']."' ";
+				$element['class'] .= " avia_onchange";
+			}
+			
 			$multi = $multi_class = "";
 			if(isset($element['multiple'])) 
 			{
@@ -638,11 +809,33 @@ if( ! class_exists( 'avia_htmlhelper' ) )
 			}
 			
 			$output  = '<span class="avia_style_wrap avia_select_style_wrap'.$multi_class.'"><span class="avia_select_unify">';
-			$output .= '<select '.$multi.' class="'.$element['class'].'" id="'. $element['id'] .'" name="'. $element['id'] . '"> ';
+			$output .= '<select '.$onchange.' '.$multi.' class="'.$element['class'].'" id="'. $element['id'] .'" name="'. $element['id'] . '"> ';
 			
 			
 			if(!isset($element['no_first'])) { $output .= '<option value="">'.$select .'</option>  '; $fake_val = $select; }
-
+			
+			$real_entries = array();
+			foreach ($entries as $key => $entry)
+			{
+				if(!is_array($entry))
+				{
+					$real_entries[$key] = $entry;
+				}
+				else
+				{
+					$real_entries['option_group_'.$key] = $key;
+				
+					foreach($entry as $subkey => $subentry)
+					{
+						$real_entries[$subkey] = $subentry;
+					}
+					
+					$real_entries['close_option_group_'.$key] = "close";
+				}
+			}
+			
+			$entries = $real_entries;
+			
 			foreach ($entries as $key => $entry)
 			{
 				
@@ -664,19 +857,33 @@ if( ! class_exists( 'avia_htmlhelper' ) )
 					$id = $entry;
 					$title = $key;				
 				}
-				if(!empty($title))
+			
+				if(!empty($title) || $title === 0)
 				{
 					if(!isset($fake_val)) $fake_val = $title;
 					$selected = "";
 					if ($element['std'] == $id || (is_array($element['std']) && in_array($id, $element['std']))) { $selected = "selected='selected'"; $fake_val = $title;}
-	
 					
-					$output .= "<option $selected value='". $id."'>". $title."</option>";
+					if(strpos ( $title , 'option_group_') === 0) 
+					{
+						$output .= "<optgroup label='". $id."'>";
+					}
+					else if(strpos ( $title , 'close_option_group_') === 0) 
+					{
+						$output .= "</optgroup>";
+					}
+					else
+					{
+						$output .= "<option $selected value='". $id."'>". $title."</option>";
+					}
+					
 				}
 			}
 			$output .= '</select>';
 			$output .= '<span class="avia_select_fake_val">'.$fake_val.'</span>';
 			$output .= '</span></span>';
+			
+			if(isset($element['hook'])) $output.= '<input type="hidden" name="'.$element['hook'].'" value="'.$element['hook'].'" />';
 			
 			return $output;
 		}
@@ -690,16 +897,19 @@ if( ! class_exists( 'avia_htmlhelper' ) )
          */
 		function visual_group_start( $element )
 		{	
-			$required = $extraclass = "";
+			$required = $extraclass = $data= "";
 			
 			if(isset($element['required'])) 
 			{ 
 				$required = '<input type="hidden" value="'.$element['required'][0].'::'.$element['required'][1].'" class="avia_required" />';  
 				$extraclass = ' avia_hidden avia_required_container';
 			} 
+			
+			if(isset($element['name'])) $data = "data-group-name='".$element['name']."'";
+			if(isset($element['inactive'])) { $data .= " data-group-inactive='".$element['inactive']."'"; $extraclass .= " inactive_visible";}
 
 		
-			$output  = '<div class="avia_visual_set avia_'.$element['type'].$extraclass.' '.$element['class'].'" id="'.$element['id'].'">';
+			$output  = '<div class="avia_visual_set avia_'.$element['type'].$extraclass.' '.$element['class'].'" id="'.$element['id'].'" '.$data.'>';
 			$output .= $required;
 				
 			return $output;
@@ -713,6 +923,22 @@ if( ! class_exists( 'avia_htmlhelper' ) )
 		function visual_group_end()
 		{			
 			$output  = '</div>';
+			return $output;
+		}
+		
+		
+		/**
+         * 
+         * The hidden method renders a single div element with class hr
+         * @param array $element the array holds data like type, value, id, class, description which are necessary to render the whole option-section
+         * @return string $output the string returned contains the html code generated within the method
+         */
+		function hr( $element )
+		{	
+			$class = "";
+			if(isset($element['class'])) $class = $element['class'];	
+			
+			$output  = '<div class="avia_hr '.$class.'"><div class="avia_inner_hr"></div></div>';
 			return $output;
 		}
 		
@@ -749,6 +975,8 @@ if( ! class_exists( 'avia_htmlhelper' ) )
 				$required = '<input type="hidden" value="'.$element['required'][0].'::'.$element['required'][1].'" class="avia_required" />';  
 				$extraclass = ' avia_hidden avia_required_container';
 			} 
+			
+			if(isset($element['class'])) $extraclass .= ' '.$element['class'];
 		
 			$output  = '<div class="avia_section avia_'.$element['type'].' '.$extraclass.'"  id="avia_'.$element['id'].'">';
 			$output .= $required;
@@ -806,7 +1034,8 @@ if( ! class_exists( 'avia_htmlhelper' ) )
 				}
 				
 			} 
-		
+			if(isset($element['class'])) $extraclass .= ' '.$element['class'];
+			
 			$output  = '<div class="avia_section avia_'.$element['type'].$extraclass.'" id="avia_'.$element['id'].'">';
 			$output .= $required;
 			$output .= $target;
@@ -858,13 +1087,14 @@ if( ! class_exists( 'avia_htmlhelper' ) )
          */
 		function page_header()
 		{
-
+			$the_title = apply_filters( 'avia_filter_backend_page_title', $this->avia_superobject->base_data['Title'] );
+			
 			$output  = '<form id="avia_options_page" action="#" method="post">';
 			$output .= '	<div class="avia_options_page_inner avia_sidebar_active">';
 			$output .= '	<div class="avia_options_page_sidebar"><div class="avia_header"></div><div class="avia_sidebar_content"></div></div>';
 			$output .= '		<div class="avia_options_page_content">';
 			$output .= '			<div class="avia_header">';
-			$output .= '			<h2 class="avia_logo">'.$this->avia_superobject->base_data['prefix'].' '.$this->avia_superobject->currentpage.'</h2>';
+			$output .= '			<h2 class="avia_logo">'.$the_title.' '.$this->avia_superobject->currentpage.'</h2>';
 			$output .= '				<ul class="avia_help_links">';
 			$output .= '					<li><a class="thickbox" onclick="return false;" href="http://docs.kriesi.at/'.avia_backend_safe_string($this->avia_superobject->base_data['prefix']).'/changelog/index.php?TB_iframe=1">Changelog</a> |</li>';
 			$output .= '					<li><a target="_blank" href="http://docs.kriesi.at/'.avia_backend_safe_string($this->avia_superobject->base_data['prefix']).'/documentation/">Docs</a></li>';
@@ -938,6 +1168,8 @@ if( ! class_exists( 'avia_htmlhelper' ) )
          */
 		function hidden_data()
 		{
+		
+			$options = get_option($this->avia_superobject->option_prefix);
 			
 			$output  = '	<div id="avia_hidden_data" class="avia_hidden">';
 			
@@ -955,6 +1187,7 @@ if( ! class_exists( 'avia_htmlhelper' ) )
 			    $output .= '		<input type="hidden" name="avia-nonce" value="'.$nonce.'" />';
 				$output .= '		<input type="hidden" name="action" value="avia_ajax_save_options_page" />';
 				$output .= '		<input type="hidden" name="avia_options_page_slug" value="'.$this->avia_superobject->page_slug.'" />';
+				if(empty($options)) $output .= ' <input type="hidden" name="avia_options_first_call" value="true" />';
 			}
 			//if the code was rendered for a meta box
 			if($this->context == 'metabox')
@@ -1049,7 +1282,6 @@ if( ! class_exists( 'avia_htmlhelper' ) )
 		return $output;
 	}
 	
-
 
 		
 	}

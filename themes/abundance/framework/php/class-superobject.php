@@ -195,18 +195,13 @@ if( ! class_exists( 'avia_superobject' ) )
 		function set_javascript_framework_url()
 		{
 			echo "\n <script type='text/javascript'>\n /* <![CDATA[ */  \n";
-			echo "var avia_framework_globals = {\n \tframeworkUrl: '".AVIA_FW_URL."', \n \tinstalledAt: '".AVIA_BASE_URL."'\n \t}; \n /* ]]> */ \n ";
+			echo "var avia_framework_globals = {\n \tframeworkUrl: '".AVIA_FW_URL."', \n \tinstalledAt: '".AVIA_BASE_URL."', \n \tajaxurl: '".apply_filters('avia_ajax_url_filter', admin_url( 'admin-ajax.php' ))."'\n \t}; \n /* ]]> */ \n ";
 			echo "</script>\n \n ";
 		}
 		
 		
 	}
 }
-
-
-
-
-
 
 
 

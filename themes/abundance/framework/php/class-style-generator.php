@@ -45,6 +45,7 @@ if( !class_exists( 'avia_style_generator' ) )
 		 * @var string
 		 */
 		var $extra_output = "";
+		var $webfont_count = 1;
 	
 		function avia_style_generator(&$avia_superobject)
 		{
@@ -55,6 +56,10 @@ if( !class_exists( 'avia_style_generator' ) )
 		function create_styles()
 		{
 			global $avia_config;
+			if(!isset($avia_config['font_stack'])) $avia_config['font_stack'] = "";
+			if(!isset($avia_config['style'])) return;
+			
+			$avia_config['style'] = apply_filters('avia_style_filter',$avia_config['style']);
 			$this->rules = $avia_config['style'];
 			
 			if(is_array($this->rules))
@@ -102,6 +107,56 @@ if( !class_exists( 'avia_style_generator' ) )
 			$this->extra_output .= "<script type='text/javascript' src='".AVIA_JS_URL."fonts/cufon.js'></script>\n";
 			$this->extra_output .= "<script type='text/javascript' src='".AVIA_JS_URL."fonts/".$rule_split[0].".font.js'></script>\n";
 			$this->extra_output .= "<script type='text/javascript'>\n\tvar avia_cufon_size_mod = '".$rule_split[1]."'; \n\tCufon.replace('".$rule['elements']."',{  fontFamily: 'cufon', hover:'true' }); \n</script>\n";
+		}
+		
+		function google_webfont($rule)
+		{
+			global $avia_config;
+		
+			//check if the font has a weight applied to it and extract it. eg: "Yanone Kaffeesatz:200"
+			$font_weight = "";
+			$get_google_font = true;
+			
+			if(strpos($rule['value'], ":") !== false)
+			{
+				$data = explode(':',$rule['value']);
+				$rule['value'] = $data[0];
+				$font_weight = ":".$data[1];
+			}
+		
+			$rule_split = explode('__',$rule['value']);
+			
+			if(!isset($rule_split[1])) $rule_split[1] = 1;
+			
+			if(strpos($rule_split[0], 'websave') !== false)
+			{
+				
+				$rule_split = explode(',',$rule_split[0]);
+				$rule_split = strtolower(" ".$rule_split[0]);
+				$rule_split = str_replace('"','',$rule_split);
+				$rule_split = str_replace("'",'',$rule_split);
+				$rule_split = str_replace("-websave",'',$rule_split);
+
+				$avia_config['font_stack'] .= $rule_split.'-websave';
+				$rule_split = array(str_replace( "-", " " , $rule_split ), 1);
+				$get_google_font = false;
+			}
+			
+			$prefix = "http";
+			if(isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') $prefix = "https";
+			
+			if($get_google_font){
+			$this->extra_output .= "\n<!-- google webfont font replacement -->\n";
+			$this->extra_output .= '<link id="google_webfont_'.$this->webfont_count.'" rel="stylesheet" type="text/css" href="'.$prefix.'://fonts.googleapis.com/css?family='.str_replace(' ','+',$rule_split[0]).$font_weight.'" />';
+			
+			$this->webfont_count++;
+			if(!empty($font_weight)) $font_weight = "\nfont-weight".$font_weight.";";
+			}
+
+			$this->output .= $rule['elements']."{\nfont-family:".$rule_split[0].";".$font_weight."\n}\n\n";
+			if($rule_split[1] !== 1) $this->output .= $rule['elements']."{\nfont-size:".$rule_split[1]."em;\n}\n\n";
+			
+			$avia_config['font_stack'] .= " ".strtolower( str_replace( " ", "_" , $rule_split[0] ))." ";
 		}
 		
 		function direct_input($rule)

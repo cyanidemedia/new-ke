@@ -1,7 +1,7 @@
 /*	
 Theme Name: Abundance
 Description: <strong>A sleek Business Theme by Kriesi</strong> - <br/> Update notifications available on twitter and facebook:<br/> <a href='http://twitter.com/kriesi'>Follow me on twitter</a><br/> - <a href='http://www.facebook.com/pages/Kriesi/333648177216'>Join the Facebook Group</a>
-Version: 1.2.1
+Version: 1.6
 Author: Kriesi
 Author URI: http://www.kriesi.at
 */
@@ -37,6 +37,21 @@ Changes will affect the entire layout...
 body, ul, ol, h1,h2,h3,h4,h5,h6,form,li,p,input,select,legend,textarea,fieldset{ margin:0; padding:0;}
 ul, ol{list-style-type: none; list-style-position: outside;}
 
+html, body{
+position: relative;
+width:auto;
+margin:0 auto;
+
+}
+
+.mobile_wrap{
+position: relative;
+min-width: 1000px;
+margin: 0 auto;
+overflow: hidden;
+}
+
+
 .container{
 width: 930px;
 margin: 0 auto;
@@ -63,9 +78,6 @@ width: 100%; margin: 0 auto; z-index: 2;
 position:relative; display:block;clear:both;
 }
 
- #wrap_all{
- display:block;
- }
 
 .grid1, .grid2, .grid3, .grid4, .grid5, .grid6, .grid7, .grid8, .grid9, .grid10, .grid11, .grid_fifth1, .grid_fifth2, .grid_fifth3, .grid_fifth4, .grid_fifth5, .grid_third1, .grid_third2, .grid_third3, .grid_fourth1, .grid_fourth2, .grid_fourth3{
 float: left;
@@ -193,17 +205,10 @@ overflow-x: hidden;
 z-index: 2;
 }
 
-/*#header .container{
-padding: 10px 0 0 0;
-z-index: 100;
-height:155px;
-}
-*/
-
 #header .container{
 padding: 10px 0 0 0;
 z-index: 100;
-height:100px;
+height:155px;
 }
 
 #header.boxed .container{
@@ -244,7 +249,7 @@ width:220px;
 
 /*bookmark icons*/
 
-/*.social_bookmarks {
+.social_bookmarks {
 height: 24px;
 position: absolute;
 right: 231px;
@@ -254,20 +259,7 @@ display: block;
 float: left;
 list-style-type: none;
 list-style-position: outside;
-}*/
-
-.social_bookmarks {
-height: 24px;
-position: absolute;
-right: 231px;
-top: 30px;
-border: medium none;
-display: block;
-float: left;
-list-style-type: none;
-list-style-position: outside;
 }
-
 
 .social_bookmarks a{
 height:24px;
@@ -624,7 +616,7 @@ border-top:1px solid #e1e1e1;
 
 .footer-logos img{
 float: left;
-padding:10px 9px;
+padding:10px 5px;
 }
 
 /************************************************************************
@@ -1495,7 +1487,7 @@ text-transform: uppercase;
 font-style: normal;
 }
 
-#comments span, .minitext, .form-allowed-tags, #reply-title small, #commentform label{
+.comment-entry #comments span, .minitext, .form-allowed-tags, #reply-title small, #commentform label{
 font-size: 11px;
 display:block;
 letter-spacing: 0;
@@ -2068,19 +2060,11 @@ display:none;
 }
 
 /*searchform*/
-/*#header #searchform {
-width: 220px;
-position: absolute;
-right: 0;
-top: 63px;
-}
-*/
-
 #header #searchform {
 width: 220px;
 position: absolute;
 right: 0;
-top: 22px;
+top: 63px;
 }
 
 .content #searchform{
@@ -2238,3 +2222,4 @@ font-size: 19px;
 #top .slideshow_big .advanced_blockquote{
 padding:0px 0 20px 0;
 }
+

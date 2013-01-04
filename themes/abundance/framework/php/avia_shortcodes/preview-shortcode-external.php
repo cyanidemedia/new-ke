@@ -1,27 +1,16 @@
 <?php 
 
-$paths = array(
-    "../../..",
-    "../../../..",
-    "../../../../..",
-    "../../../../../..",
-    "../../../../../../..",
-    "../../../../../../../..",
-    "../../../../../../../../..",
-    "../../../../../../../../../..",
-    "../../../../../../../../../../..",
-    "../../../../../../../../../../../..",
-    "../../../../../../../../../../../../.."
-);
-
-
-#include wordpress, make sure its available in one of the higher folders
-foreach ($paths as $path) 
-{
-   if(@include_once($path.'/wp-load.php')) break;
-}
+$full_path = __FILE__;
+$path = explode( 'wp-content', $full_path );
+require_once( $path[0] . '/wp-load.php' );
 
 $shortcode_css = AVIA_BASE_URL.'css/shortcodes.css';
+
+
+if(!current_user_can('edit_files')) die("");
+do_action('avia_shortcode_prev');
+
+
 ?>
 
 <html>

@@ -12,11 +12,13 @@
 
 jQuery(function($) {
 
+	$('body').avia_event_listener();
     $('.avia_set').avia_clone_sets();
-    $('.avia_required_container').avia_form_requirement();
+    $('.avia_required_container').not('.avia_delay_required .avia_required_container').avia_form_requirement();
     $('.avia_target_value').avia_target();
     $('.avia_link_controller').avia_prefill_options();
-    
+    $('.avia_onchange').avia_on_change();
+
     //unify select dropdowns
     $('.avia_select_unify select').live('change', function()
     {
@@ -30,7 +32,12 @@ jQuery(function($) {
     	el.css('opacity',0).next('.avia_select_fake_val').text(el.find('option:selected').text());
     });
     
-    
+    var firstcall = $('input[name=avia_options_first_call]', '#avia_hidden_data');
+    if(firstcall.length)
+    {
+    	//activate color scheme
+    	$('.avia_link_controller_active').trigger('click');
+    }
     
   });
 
@@ -47,26 +54,96 @@ event binding fake plugin to circumvent event cloning problems with external plu
 	$.fn.avia_event_binding = function(variables) 
 	{		
 		return this.each(function()
-		{
-			var container = $(this);
+		{		
+			if(window.parent && window.parent.document && variables != 'skip')
+			{
+				parent.jQuery(window.parent.document.body).trigger('avia_event_binding',[this]);
+				return;
+			}
 			
+			var container = $(this);
+			if($.fn.avia_media_advanced_plugin)		container.avia_media_advanced_plugin();
 			if($.fn.avia_color_picker_activation) 	container.avia_color_picker_activation();
 			if($.fn.avia_clone_sets) 				container.avia_clone_sets();
-			if($.fn.avia_form_requirement) 			$('.avia_required_container', container).avia_form_requirement();
+			if($.fn.avia_form_requirement) 			$('.avia_required_container', container).not('.avia_delay_required .avia_required_container').avia_form_requirement();
 			if($.fn.avia_target) 					$('.avia_target_value', container).avia_target();
 			if($.fn.avia_prefill_options) 			$('.avia_link_controller', container).avia_prefill_options();
+			if($.fn.avia_on_change) 				$('.avia_on_change', container).avia_on_change();
 			
 			var saveButton = $('.avia_submit'),
 				elements = $('input, select, textarea', container).not('.avia_button_inactive');
 			elements.bind('keydown change', function(){saveButton.removeClass('avia_button_inactive'); });
 			$('.avia_clone_set, .avia_remove_set, .avia_dynamical_add_elements', container).bind('click', function(){ saveButton.removeClass('avia_button_inactive'); });
 			$('.avia_select_unify select').not('.avia_multiple_select select').css('opacity',0);
-		
+			
 		});
 	};
 })(jQuery);	
 
 
+//event binding helper when executing events from an iframe
+(function($)
+{
+	$.fn.avia_event_listener = function(variables) 
+	{	
+		this.bind('avia_event_binding', function(event, element)
+		{
+			parent.jQuery(element).avia_event_binding('skip');
+		});
+	};
+})(jQuery);
+
+
+
+/************************************************************************
+avia_on_change function
+
+execute a function after change event was fired
+*************************************************************************/
+(function($)
+{
+	$.fn.avia_on_change = function(variables) 
+	{	
+		return this.each(function()
+		{
+			var item 	= $(this),
+				event 	= item.data('avia-onchange');	
+			
+			//available functions
+			var methods = 
+			{
+				avia_add_google_font: function()
+				{
+					var current 	= $(this),
+						value 		= current.val(),
+						cssValue 	= value.replace(/ /g, "+", value),
+						parentItem 	= current.parents('.avia_control:eq(0)'),
+						cssRule 	= parentItem.find('.webfont_'+this.id)
+						insert		= "";
+						
+					cssRule.remove();
+					
+					if(value.indexOf("-websave") != -1)
+					{
+						value = value.replace(/-websave/g, "", value),
+						value = value.replace(/-/g, "", value)
+						insert = '<style type="text/css">.webfont_'+this.id+'{font-family:'+value.replace(/:(\d+)$/,"")+';}</style>';
+					}
+					else
+					{
+						insert = '<link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family='+cssValue+'" /> <style type="text/css">.webfont_'+this.id+'{font-family:'+value.replace(/:(\d+)$/,"")+';}</style>';
+					}
+					
+					cssRule = $('<div class="webfont_'+this.id+'">'+insert+'</div>');
+					cssRule.appendTo(parentItem);
+				}
+			};
+			
+			
+			item.bind('change', methods[event]).trigger('change');
+		});
+	};
+})(jQuery);	
 
 
 /************************************************************************
@@ -84,7 +161,8 @@ sets element to certain values when a controll element is clicked
 				siblings = item.parents('.avia_section:eq(0)').find('.avia_link_controller'),
 				htmlData = item.data(),
 				i = "";
-					
+				
+				
 				var methods = {
 				
 					apply: function()
@@ -96,7 +174,9 @@ sets element to certain values when a controll element is clicked
 						{
 							if(typeof htmlData[i] == "string" || typeof htmlData[i] == "number" || typeof htmlData[i] == "boolean")
 							{
-								var el = $('#'+i);
+								var selector = i.replace( /([A-Z])/g, "-$1" ).toLowerCase();
+								
+								var el = $('#'+selector);
 								if(el.length)
 								{
 									if(el.is('input[type=text]') || el.is('input[type=hidden]') || el.is('select'))
@@ -113,6 +193,8 @@ sets element to certain values when a controll element is clicked
 								
 				
 			item.bind('click', methods.apply );
+			
+			
 				
 		});
 	};
@@ -130,7 +212,6 @@ injects data into a target field, based on type of data providing element
 	{
 		return this.each(function()
 		{
-		
 			var item = $(this),
 				container = item.parents('.avia_section:eq(0)'),
 				monitorItem = "",
@@ -138,18 +219,40 @@ injects data into a target field, based on type of data providing element
 				values = item.val().split('::'),
 				targetContainer = $('#avia_'+values[0]),
 				target = $(values[1], targetContainer),
-				changeProperty = values[2];				 
-				
+				changeProperty = values[2];				 				
 				
 				var methods = {
 				
 					apply: function()
 					{
-						switch(changeProperty)
+						
+						var the_value = monitorItem.val(), hiddenItem = false, property = [];
+						
+						if(changeProperty.indexOf(',') >= 0 ) 
 						{
-							case 'background-color': target.css({'background-color':monitorItem.val()}); break;
-							case 'color': target.css({'color':monitorItem.val()}); break;
-							case 'set_id': target.attr({'id':monitorItem.val().replace(/\./,'-')}); break;
+							property = changeProperty.split(',');
+						}
+						else
+						{
+							property = [changeProperty];
+						}
+						
+						for( var i in property)
+						{
+							if(container.css("display") != "block") {the_value = ""; hiddenItem = true;};
+							switch(property[i])
+							{
+								case 'background-color': target.css({'background-color':the_value}); break;
+								case 'background-image': if(!hiddenItem) target.css({'background-image':"url(" + the_value + ")"}); break;
+								case 'border-color': target.css({'border-color':the_value}); break;
+								case 'color': target.css({'color':the_value}); break;
+								case 'set_id': target.attr({'id':the_value.replace(/\./,'-')}); break;
+								default: 
+								var fill_in = {};
+								fill_in[property[i]] = the_value;
+								target.css(fill_in); 
+								break;
+							}
 						}
 						
 						
@@ -167,7 +270,10 @@ injects data into a target field, based on type of data providing element
 					monitorItem = container.find('.avia_color_picker');
 				}
 				
-				
+				if(container.is('.avia_upload'))
+				{
+					monitorItem = container.find('.avia_upload_input');
+				}
 				
 				
 				
@@ -179,7 +285,7 @@ injects data into a target field, based on type of data providing element
 					});				
 				}
 				
-				methods.apply();
+				setTimeout(function(){ methods.apply(); },200);
 		});
 	};
 })(jQuery);	
@@ -197,7 +303,6 @@ divs with elements get hidden or shown depending on the value of other elements
 {
 	$.fn.avia_form_requirement = function(variables) 
 	{	
-		
 		return this.each(function()
 		{
 			var container = $(this),
@@ -240,11 +345,25 @@ divs with elements get hidden or shown depending on the value of other elements
 				//if we couldnt find the elment to watch we might need to search on the whole page, it could be outside of the group as a "global" setting
 				if(elementToWatch.length == 0) elementToWatch = $(':input[name$='+basicData.required[0]+']');
 				
+				if(container.is('.inactive_visible'))
+				{
+					$('<div class="avia_inactive_overlay"><span>'+container.data('group-inactive')+'</span></div>').appendTo(container);
+				}
 				
 				//set current state:
 				if(elementToWatch.is(':checkbox'))
 				{	
-					if((elementToWatch.attr('checked') && basicData.required[1]) || (!elementToWatch.attr('checked') && !basicData.required[1]) ) { container.css({display:'block'}); }
+					if((elementToWatch.attr('checked') && basicData.required[1]) || (!elementToWatch.attr('checked') && !basicData.required[1]) ) 
+					{ 
+						if(container.is('.inactive_visible'))
+						{
+							container.addClass('avia_visible');
+						}
+						else
+						{
+							container.css({display:'block'}); 
+						}
+					}
 				}
 				else
 				{
@@ -254,7 +373,16 @@ divs with elements get hidden or shown depending on the value of other elements
 					  (basicData.required[1].indexOf('{higher_than}') !== -1 && parseInt(elementToWatch.val()) >= parseInt((basicData.required[1].replace('{higher_than}',''))))
 					
 					) 
-					{ container.css({display:'block'}); }
+					{ 
+						if(container.is('.inactive_visible'))
+						{
+							container.addClass('avia_visible');
+						}
+						else
+						{
+							container.css({display:'block'}); 
+						}
+					}
 				}
 				
 		
@@ -283,7 +411,13 @@ divs with elements get hidden or shown depending on the value of other elements
 			(data.required[1].indexOf('{higher_than}') !== -1 && parseInt(elToCheck.val()) >= parseInt((data.required[1].replace('{higher_than}',''))))
 			)
 			{
-
+				if(data.el.is('.inactive_visible'))
+				{
+					data.el.addClass('avia_visible');
+					return;
+				}
+				
+				
 				if(data.el.css('display') == 'none')
 				{
 					
@@ -302,12 +436,19 @@ divs with elements get hidden or shown depending on the value of other elements
 			else
 			{
 									
-
+				if(data.el.is('.inactive_visible'))
+				{
+					data.el.removeClass('avia_visible');
+					return;
+				}
+				
 				if(data.el.css('display') == 'block')
 				{
+					if(data.el.is('.set_blank_on_hide')) { var blank_el = data.el.find('.set_blank_on_hide'); blank_el.val("").trigger('change'); }
 					data.el.css({overflow:"hidden"}).animate({height:0, opacity:0, paddingBottom:0, paddingTop:0}, function()
 					{
 						data.el.css({display:"none", overflow:"visible", height:"auto"});
+						
 					});
 				}
 			}
@@ -339,7 +480,7 @@ avia_clone_sets: function to modify sets: add them, remove them and recalculate 
 		{
 			//gather form data
 			var container = $(this);
-				
+			
 			if(container.length != 1) return;
 			
 			var hiddenDataContainer = $('#avia_hidden_data'),
@@ -388,7 +529,6 @@ avia_clone_sets: function to modify sets: add them, remove them and recalculate 
 				cloneContainer = currentButton.parents('.avia_set:eq(0)'),
 				parentCloneContainer = currentButton.parents('.avia_set:eq(1)'),
 				elementSlug = cloneContainer.attr('id');
-			
 			
 			if(parentCloneContainer.length == 1)
 			{
@@ -473,7 +613,6 @@ avia_clone_sets: function to modify sets: add them, remove them and recalculate 
 		
 		remove: function(passed)
 		{
-			
 			//security check to prevent ajax request problems: only modify one set at a time
 			if(currentlyModifying) return false;
 			currentlyModifying = true;
@@ -485,7 +624,7 @@ avia_clone_sets: function to modify sets: add them, remove them and recalculate 
 				
 				data.setsToCount = singleSet.siblings('.avia_set').filter('[id*='+id+']');
 				
-				if(data.setsToCount.length)
+				if(data.setsToCount.length || data.removeButton.is('.remove_all_allowed'))
 				{
 					data.currentSet = data.setsToCount.filter(':eq(0)');
 					
@@ -518,11 +657,21 @@ avia_clone_sets: function to modify sets: add them, remove them and recalculate 
 		},
 
 
+		recalcIds: function(data)
+		{
+			avia_recalcIds(data);
+		}
+		
 
+	};
+	
+	
 		/************************************************************************
 		recalculate ids whenever an element is added or deleted
 		*************************************************************************/
-		recalcIds: function(data)
+	
+	    
+	    avia_recalcIds = function(data)
 		{	
 			//if no element group was passed create one
 			//(no elements are passed on delete, we need to pass the group when we delete since the set isnt available any more)
@@ -534,9 +683,16 @@ avia_clone_sets: function to modify sets: add them, remove them and recalculate 
 			
 			//check if we got a parent group
 			var parentGroup = data.currentSet.parents('.avia_set:eq(0)'),
-				newId = "";
-			
-			
+				newId = "",
+				detatch_element,
+				detatch_parent;
+
+			if(typeof data.detach == 'string')
+			{
+				detatch_element	= data.currentSet.parents(data.detach+':eq(0)');
+				detatch_parent	= detatch_element.parent();
+				detatch_element.detach();
+			}
 			
 			//if we got a parent group calculate the string that needs to be prepended to all siblings based on that parent
 			//otherwise the current group is the highest within the dom and needs to be used as string base	
@@ -546,8 +702,11 @@ avia_clone_sets: function to modify sets: add them, remove them and recalculate 
 				newId = parentGroup.attr('id') +'-__-'+ newId.replace(/\d+$/,'');
 			}
 			else
-			{
-				newId = data.currentSet.attr('id').replace(/\d+$/,'');
+			{	
+				if(data.currentSet.attr('id'))
+				{
+					newId = data.currentSet.attr('id').replace(/\d+$/,'');
+				}
 			}
 			
 			/**
@@ -560,7 +719,7 @@ avia_clone_sets: function to modify sets: add them, remove them and recalculate 
 			 *  The replacement pattern for container is	: "String: "avia_" + id of parent element + own id" 
 			 *
 			 */
- 
+ 			
 			data.setsToCount.each(function(i)
 			{
 				var currentSet = $(this),
@@ -568,17 +727,17 @@ avia_clone_sets: function to modify sets: add them, remove them and recalculate 
 					setId = newId + i;
 				
 				//modify the highest set id as base for all elements within
-				currentSet.attr('id', setId);
+				this.id = setId;
+				
 				
 				//now modify all elements within the set
 				elements.each(function()
 				{
 					
 					var element = $(this),
-						el_attr = element.attr('id'),
+						el_attr = this.id,
 						parentSet = element.parents('.avia_set:eq(0)'),
-						replacementString = parentSet.attr('id').replace('avia_','');
-						
+						replacementString = parentSet[0].id.replace('avia_','');
 						
 						//checks if id is found that ends with -__-(element_name)									
 						var match = el_attr.match(/[a-z0-9](-__-[-_a-zA-Z0-9]+-__-\d+)$/);
@@ -586,40 +745,268 @@ avia_clone_sets: function to modify sets: add them, remove them and recalculate 
 						if(match == null)
 						{
 							var myRegexp = /.+-__-([-_a-zA-Z0-9]+)$/;
-							match = myRegexp.exec(element.attr('id'));
+							match = myRegexp.exec(el_attr);
 							
 							id_string = replacementString + '-__-' + match[1];
 							
-							if(element.attr('name'))
+							if(this.name)
 							{
-								element.attr('name', id_string);
+								this.name = id_string;
 							}
 							else
 							{
 								id_string = 'avia_' +id_string;
 							}
-							element.attr('id', id_string);
+							this.id = id_string;
 							
 						}
 						else //else we got an element with -__-(int), therefore we need to modify a subset container
 						{
 							el_attr_array = match[1];
-							element.attr('id', 'avia_' + replacementString + el_attr_array);
+							this.id = 'avia_' + replacementString + el_attr_array;
 						}
 					
 				});
 			});
-
+			
 			//delte the setsToCount global for all future iterations
 			data.setsToCount = "";
+			
+			if(typeof detatch_element != "undefined" && detatch_element.length)
+			{
+				detatch_element.prependTo(detatch_parent);
+			}
 			
 			
 			return;			
 		} //end recalcids
 
-	};
-	
-	
 	
 })(jQuery);	
+
+
+
+
+
+/*instant editor*/
+
+(function($)
+{
+	$.fn.avia_instant_editor = function(passed_options) 
+	{	
+		"use strict";
+		
+		var win			= $(window),
+			editing		= false,
+			defaults	= {
+				
+				class: 'avia_default_instant_editor',
+				elements: 'td',
+    			input: {avia_text:'textarea'},
+    			output:'',
+    			start:'click',
+    			appendTo: false,
+    			special_buttons: false
+			
+			},
+			methods		= {
+			
+				bind_event: function(container)
+				{
+					var options = container.options;
+					
+					//remove all previous bindings
+					container.off(".avia_instant_edit", options.elements);
+					
+					//add new bindings
+					container.on(options.start+".avia_instant_edit", options.elements, function(e){methods.show_editor(this, container, e); });
+					
+					//add new bindings
+					container.on("click.avia_instant_edit", '.avia_editor_button', function(e){methods.insert_button_shortcode(this, container, e); });
+					
+					//bind tabing
+					win.off('.avia_instant_edit_keyup').on("keyup.avia_instant_edit_keyup", function(e){ methods.key_binds(this, container, e); });
+				},
+				
+				key_binds: function(current, container, event)
+				{
+					var options 	= container.options;
+					
+						
+					switch(event.keyCode)
+					{
+						case 9: 
+
+						if(editing && editing.length)
+						{
+							var elements	= container.find(options.elements),
+								index		= elements.index(editing),
+								direction	= event.shiftKey ? -1 : 1,
+								next		= elements.filter(':eq('+(index + direction)+')');
+							
+							if(!next.length)
+							{
+								if(direction == 1)
+								{
+									next = elements.filter(':eq(0)');
+								}
+								else
+								{
+									next = elements.filter(':last');
+								}
+							}
+							
+							next.trigger('click');
+							event.stopPropagation();
+							event.preventDefault();
+							editing = next;
+						}
+						
+						
+						
+						break; //tab
+					}
+				},
+				
+				insert_button_shortcode: function(current, container, event)
+				{
+					event.stopPropagation();
+					event.preventDefault();
+					
+					var button 		= current.hash.substring(1),
+						shortcode	= container.options.special_buttons[button].code,
+						target		= $(current).parents('.avia_instant_editor:eq(0)').find(':input:eq(0)'),
+						htmlVal		= target.val();
+					
+					if(htmlVal == 'Edit')
+					{
+						target.val(shortcode);
+					}
+					else
+					{
+						target.val(htmlVal + shortcode);
+					}	 
+				},
+				
+				show_editor: function(current, container, event)
+				{
+					event.stopPropagation();
+					
+					var currentEl = $(current);
+					
+					if(!currentEl.is('.avia_active_editor')) 
+					{
+						var	html_value	= currentEl.html(),
+							form		= methods.form_builder(container, html_value);
+						
+						
+						currentEl.addClass('avia_active_editor').html(form);
+						currentEl.find(':input:eq(0)').focus().select();
+						win.trigger('click');
+						methods.closeListener(container, currentEl);
+						
+						editing = currentEl;
+					}
+				},
+				
+				close_editor: function(container, close_element)
+				{
+					if(container.options.output == "")
+					{
+						var key, 
+						input = container.options.input,
+						output = "";
+					
+						for(key in input)
+						{
+							output += close_element.find(input[key]).val();
+						}
+						
+						output = output.replace(/\n/g,"</br>");
+						
+						close_element.html(output).removeClass('avia_active_editor');
+						win.unbind('.avia_instant_edit');
+						editing = false;
+					}
+				
+				},
+				
+				form_builder: function(container, html_value )
+				{
+					var key, 
+						input = container.options.input,
+						form = "<div class='avia_instant_editor "+container.options.class+"'>";
+					
+					form += methods.button_builder(container);
+										
+					for(key in input)
+					{
+						form += methods[input[key]].call(this, key, html_value);
+					}
+					
+					form += "</div>";
+					
+					return form;
+				},
+				
+				button_builder: function(container)
+				{
+					var buttons = container.options.special_buttons,
+						key, form = "";
+					
+					for(key in buttons)
+					{
+						form += "<a href='#"+key+"' class='avia_editor_button "+key+"'>"+buttons[key].label+"</a>";
+					}
+					
+					return form;
+				},
+				
+				textarea: function(the_class, html_value)
+				{
+					html_value = html_value.replace(/<\/br>/g,"\n").replace(/<br>/g,"\n");
+					return "<textarea class='"+the_class+"'>"+html_value+"</textarea>";
+				},
+				
+				input: function(the_class, html_value)
+				{
+					return "<input class='"+the_class+"' value='"+html_value+"' />";
+				},
+				
+				closeListener: function(container, close_element)
+				{
+					win.unbind('.avia_instant_edit').bind(container.options.start+".avia_instant_edit", function(event)
+					{
+						if(close_element.get(0) != event.target /* && close_element.find(event.target).length == 0 */) //2nd if clause caused problems in FF and Opera so it was removed
+						{
+							methods.close_editor(container, close_element);
+						}
+						
+					});
+				}
+			};
+		
+	
+		return this.each(function()
+		{
+			var container = $(this);
+			
+			container.options	= $.extend({}, defaults, passed_options);
+			
+			methods.bind_event(container);
+			
+		});
+	};
+})(jQuery);	
+
+
+
+
+
+
+
+
+
+
+
 

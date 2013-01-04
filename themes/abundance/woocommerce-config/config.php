@@ -88,6 +88,9 @@ remove_action( 'woocommerce_after_single_product_summary', 'woocommerce_output_r
 remove_action( 'woocommerce_after_single_product', 'woocommerce_upsell_display');
 remove_action( 'woocommerce_single_product_summary', 'woocommerce_template_single_price', 10, 2);
 
+remove_action( 'woocommerce_after_single_product_summary', 'woocommerce_upsell_display', 15 );
+
+
 //add theme actions && filter
 add_action( 'woocommerce_before_main_content', 'avia_woocommerce_before_main_content', 10);
 add_action( 'woocommerce_after_main_content', 'avia_woocommerce_after_main_content', 10);
@@ -331,9 +334,14 @@ function avia_woocommerce_thumbnail()
 	$product = &new WC_Product( $post->ID );
 	//$rating = $product->get_rating_html(); //rating is removed for now since the current implementation requires wordpress to do 2 queries for each post which is not that cool on overview pages
 	ob_start();
-	woocommerce_template_loop_add_to_cart($post, $product);
+	if($product->product_type != 'external')
+	{
+		woocommerce_template_loop_add_to_cart($post, $product);
+	}
 	$link = ob_get_clean();
 	$extraClass  = empty($link) ? "single_button" :  "" ;
+	
+	
 	
 	echo "<div class='thumbnail_container'>";
 	echo "<div class='thumbnail_container_inner'>";

@@ -20,6 +20,31 @@
                 c.setDisabled("scn_button", a.selection.getContent().length > 0)
             })
         },
+        
+        control_by_key: function(passed_key, a, b)
+        {
+        	var shortcodes = false, key;
+        	if(avia_framework_globals && avia_framework_globals.shortcodes) shortcodes = avia_framework_globals.shortcodes;
+        
+	        if(shortcodes)
+			{	
+				for (key in shortcodes)
+				{	
+					if( passed_key == false && typeof shortcodes[key] == 'string')
+					{
+						a.addWithDialog(b, shortcodes[key].charAt(0).toUpperCase() + shortcodes[key].slice(1), shortcodes[key].toLowerCase().replace(/ /,'_'));
+					} 
+					else if(key == passed_key )
+					{
+						for (sub_key in shortcodes[key])
+						{
+							a.addWithDialog(b, shortcodes[key][sub_key].charAt(0).toUpperCase() + shortcodes[key][sub_key].slice(1), sub_key);
+						}	
+					}
+				}
+            }
+        },
+        
         createControl: function (d, e) {
             if (d == "scn_button") {
                 d = e.createMenuButton("scn_button", {
@@ -28,19 +53,36 @@
                     icons: false
                 });
                 var a = this;
+                var shortcodes = false, key, remove = {};
+                if(avia_framework_globals && avia_framework_globals.shortcodes) 
+                {
+                	shortcodes = avia_framework_globals.shortcodes;
+                	
+                	if(typeof avia_framework_globals.shortcodes.remove != 'undefined')
+                	{
+	                	remove = avia_framework_globals.shortcodes.remove;
+                	}
+                }
+                
                 d.onRenderMenu.add(function (c, b) {
                     a.addWithDialog(b, "Button", "button");
                     a.addWithDialog(b, "Icon link", "ilink");
+                    a.control_by_key(  "inline", a , b); 
+                    
                     b.addSeparator();
-                    a.addWithDialog(b, "Icon Box", "iconbox");
-                    a.addWithDialog(b, "Info Box", "box");
                     a.addWithDialog(b, "Quote", "quote");
+                    a.addWithDialog(b, "Info Box", "box");
+                    a.addWithDialog(b, "Icon Box", "iconbox");
+                    a.control_by_key(  "small_box", a , b); 
+                    
                   	//a.addWithDialog(b, "Related Posts", "related");
                     b.addSeparator();
                     a.addWithDialog(b, "Column Layout", "column");
 					a.addWithDialog(b, "Content Slider","slider");
-					a.addWithDialog(b, "Tabbed Content","tab");
 					a.addWithDialog(b, "Toggles","toggle");
+					a.addWithDialog(b, "Tabbed Content","tab");
+					a.control_by_key(  "content", a , b); 
+					
 					//a.addWithDialog(b, "Tab Layout","tab");
                     b.addSeparator();
                     c = b.addMenu({
@@ -49,6 +91,7 @@
                     a.addImmediate(c, "Horizontal Rule", "<br>[hr] <br>");
                     a.addImmediate(c, "Horizontal Rule with top link", "<br>[hr top] <br>");
                     a.addImmediate(c, "Whitespace", "<br>[hr_invisible] <br>");
+                    
                     c = b.addMenu({
                         title: "Dropcaps"
                     });
@@ -61,9 +104,14 @@
                     });
                     a.addWithDialog(c, "Latest Tweets", "latest_tweets");
 					a.addWithDialog(c, "Latest Posts",	"latest_posts");
-					a.addWithDialog(c, "Latest Portfolio entries",	"latest_portfolio");
+					if(!shortcodes || (typeof remove.portfolio == 'undefined')) a.addWithDialog(c, "Latest Portfolio entries",	"latest_portfolio");
+					a.control_by_key(  "widget", a , c); 
+										
+					b.addSeparator();
+					a.control_by_key(  false, a , b); 
                     
                     
+                 
                     
                     /*
                     c = b.addMenu({

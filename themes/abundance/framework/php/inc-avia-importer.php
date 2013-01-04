@@ -56,14 +56,21 @@ else
 	}
 	else
 	{
-
-		do_action('avia_import_hook');
-		
-		$wp_import = new avia_wp_import();
-		$wp_import->fetch_attachments = true;
-		$wp_import->import($import_filepath.'.xml');
-		$wp_import->saveOptions($import_filepath.'.php');
-		$wp_import->set_menus();
+		if(!isset($custom_export))
+		{
+			do_action('avia_import_hook');
+			
+			$wp_import = new avia_wp_import();
+			$wp_import->fetch_attachments = true;
+			$wp_import->import($import_filepath.'.xml');
+			$wp_import->saveOptions($import_filepath.'.php');
+			$wp_import->set_menus();
+		}
+		else
+		{
+			$import = new avia_wp_import();
+			$import->saveOptions($import_filepath.'.php', $custom_export);
+		}
 	}
 }
 

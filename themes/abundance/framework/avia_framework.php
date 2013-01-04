@@ -13,10 +13,20 @@
  * @link		http://aviathemes.com
  * @since		Version 1.0
  * @package 	AviaFramework
- * @version 	Flashlight-Edition
+ * @version 	Incarnation-Edition (Sub: v3 Abundance Edit)
 
 */ 
 
+
+
+/**
+ *  
+ * Action for plugins and functions that should be executed before any of the framework loads
+ * 
+ */
+do_action( 'avia_action_before_framework_init' );
+ 
+ 
  
 /**
  *  Config File
@@ -62,6 +72,18 @@ require( AVIA_PHP.'function-set-avia-backend.php' );
  */
  
  if(isset($avia_autoload) && is_array($avia_autoload)) avia_backend_load_scripts_by_option($avia_autoload);
+
+
+
+/*
+ * ------------------------------------------------------
+ *  Filter the base data array that is passed
+ *  upon creation of the superobject
+ * ------------------------------------------------------
+ */
+ 
+$avia_base_data = apply_filters( 'avia_filter_base_data', $avia_base_data );
+
 
 
 /**

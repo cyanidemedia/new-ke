@@ -31,8 +31,19 @@ if( ! defined('AVIA_BASE_URL' ) ){	define( 'AVIA_BASE_URL', get_bloginfo('templa
 
 
 
-$avia_base_data = get_theme_data( AVIA_BASE . '/style.css' );
-$avia_base_data['prefix'] = $avia_base_data['Title'];
+// get themedata version wp 3.4+
+if(function_exists('wp_get_theme'))
+{
+	$wp_theme_obj = wp_get_theme();
+	$avia_base_data['prefix'] = $avia_base_data['Title'] = $wp_theme_obj->get('Name');
+}
+
+// get themedata lower versions
+if(!isset($avia_base_data['Title']))
+{
+	$avia_base_data = get_theme_data( AVIA_BASE . 'style.css' );
+	$avia_base_data['prefix'] = $avia_base_data['Title'];
+}
 
 
 

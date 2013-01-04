@@ -7,20 +7,28 @@ class avia_wp_import extends WP_Import
 	var $saveOptions;
 	var $termNames;
 	
-	function saveOptions($option_file)
+	function saveOptions($option_file, $import_only = false)
 	{	
-		@include_once($option_file);
+		if($option_file) @include_once($option_file);
 		
-		if(!isset($options)) { return false; }
+		switch($import_only)
+		{
+			case 'options': $dynamic_pages = $dynamic_elements = false; break;
+			case 'dynamic_pages': $options = $dynamic_elements = false; break;
+			case 'dynamic_elements': $options = $dynamic_pages = false; break;
+		}
+		
+		
+		if(!isset($options) && !isset($dynamic_pages) && !isset($dynamic_elements)  ) { return false; }
 		
 		$options = unserialize(base64_decode($options));
 		$dynamic_pages = unserialize(base64_decode($dynamic_pages));
 		$dynamic_elements = unserialize(base64_decode($dynamic_elements));
 		
+		global $avia;
+		
 		if(is_array($options))
 		{
-			global $avia;
-
 			foreach($avia->option_pages as $page)
 			{
 				$database_option[$page['parent']] = $this->extract_default_values($options[$page['parent']], $page, $avia->subpages);

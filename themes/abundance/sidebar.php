@@ -44,7 +44,8 @@ if ($avia_config['currently_viewing'] != "fullwidth") // check if its a full wid
 						
 						if (!empty($post->post_parent))	
 						{
-							$ancestors  = get_post_ancestors($post->ID);
+							if(isset($post->ancestors)) $ancestors  = $post->ancestors;
+							if(!isset($ancestors)) $ancestors  = get_post_ancestors($post->ID);
 							$root		= count($ancestors)-1;
 							$parent 	= $ancestors[$root];
 						} 

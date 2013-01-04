@@ -348,7 +348,7 @@ jQuery(function($)
 				setCurrentColor(col, cal.get(0));
 				cal.data('colorpicker').onSubmit(col, HSBToHex(col), HSBToRGB(col), cal.data('colorpicker').el);
 			},
-			show = function (ev) {
+			show = function (ev) { 
 				var cal = $('#' + $(this).data('colorpickerId'));
 				cal.data('colorpicker').onBeforeShow.apply(this, [cal.get(0)]);
 				var pos = $(this).offset();
@@ -369,6 +369,10 @@ jQuery(function($)
 				return false;
 			},
 			hide = function (ev) {
+				
+				//Kriesi
+				if($(ev.target).data() && $(ev.target).data('colorpickerId') == ev.data.cal.attr('id')) return;
+				
 				if (!isChildOf(ev.data.cal.get(0), ev.target, ev.data.cal.get(0))) {
 					if (ev.data.cal.data('colorpicker').onHide.apply(this, [ev.data.cal.get(0)]) != false) {
 						ev.data.cal.hide();

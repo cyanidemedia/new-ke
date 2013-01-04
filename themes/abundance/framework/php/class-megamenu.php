@@ -611,12 +611,14 @@ if( !function_exists( 'avia_fallback_menu' ) )
 	function avia_fallback_menu()
 	{
 		$current = "";
+		$exclude = avia_get_option('frontpage');
 		if (is_front_page()){$current = "class='current-menu-item'";} 
+		if ($exclude) $exclude ="&exclude=".$exclude;
 		
 		echo "<div class='fallback_menu'>";
 		echo "<ul class='avia_mega menu'>";
 		echo "<li $current><a href='".get_bloginfo('url')."'>Home</a></li>";
-		wp_list_pages('title_li=&sort_column=menu_order');
+		wp_list_pages('title_li=&sort_column=menu_order'.$exclude);
 		echo "</ul></div>";
 	}
 }

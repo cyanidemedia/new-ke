@@ -5,7 +5,7 @@ Plugin URI: http://wordpress.org/extend/plugins/wordpress-importer/
 Description: Import posts, pages, comments, custom fields, categories, tags and more from a WordPress export file.
 Author: wordpressdotorg
 Author URI: http://wordpress.org/
-Version: 0.3
+Version: 0.6
 Text Domain: wordpress-importer
 License: GPL version 2 or later - http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 */
@@ -36,7 +36,7 @@ require dirname( __FILE__ ) . '/parsers.php';
  */
 if ( class_exists( 'WP_Importer' ) ) {
 class WP_Import extends WP_Importer {
-	var $max_wxr_version = 1.1; // max. supported WXR version
+	var $max_wxr_version = 1.2; // max. supported WXR version
 
 	var $id; // WXR attachment ID
 
@@ -103,6 +103,7 @@ class WP_Import extends WP_Importer {
 	 */
 	function import( $file ) {
 		add_filter( 'import_post_meta_key', array( $this, 'is_valid_meta_key' ) );
+		add_filter( 'http_request_timeout', array( &$this, 'bump_request_timeout' ) );
 
 		$this->import_start( $file );
 
@@ -192,6 +193,11 @@ class WP_Import extends WP_Importer {
 		if ( isset( $file['error'] ) ) {
 			echo '<p><strong>' . __( 'Sorry, there has been an error.', 'wordpress-importer' ) . '</strong><br />';
 			echo esc_html( $file['error'] ) . '</p>';
+			return false;
+		} else if ( ! file_exists( $file['file'] ) ) {
+			echo '<p><strong>' . __( 'Sorry, there has been an error.', 'wordpress-importer' ) . '</strong><br />';
+			printf( __( 'The export file could not be found at <code>%s</code>. It is likely that this was caused by a permissions problem.', 'wordpress-importer' ), esc_html( $file['file'] ) );
+			echo '</p>';
 			return false;
 		}
 
@@ -334,6 +340,8 @@ class WP_Import extends WP_Importer {
 		$create_users = $this->allow_create_users();
 
 		foreach ( (array) $_POST['imported_authors'] as $i => $old_login ) {
+			// Multisite adds strtolower to sanitize_user. Need to sanitize here to stop breakage in process_posts.
+			$santized_old_login = sanitize_user( $old_login, true );
 			$old_id = isset( $this->authors[$old_login]['author_id'] ) ? intval($this->authors[$old_login]['author_id']) : false;
 
 			if ( ! empty( $_POST['user_map'][$i] ) ) {
@@ -341,7 +349,7 @@ class WP_Import extends WP_Importer {
 				if ( isset( $user->ID ) ) {
 					if ( $old_id )
 						$this->processed_authors[$old_id] = $user->ID;
-					$this->author_mapping[$old_login] = $user->ID;
+					$this->author_mapping[$santized_old_login] = $user->ID;
 				}
 			} else if ( $create_users ) {
 				if ( ! empty($_POST['user_new'][$i]) ) {
@@ -361,7 +369,7 @@ class WP_Import extends WP_Importer {
 				if ( ! is_wp_error( $user_id ) ) {
 					if ( $old_id )
 						$this->processed_authors[$old_id] = $user_id;
-					$this->author_mapping[$old_login] = $user_id;
+					$this->author_mapping[$santized_old_login] = $user_id;
 				} else {
 					printf( __( 'Failed to create new user for %s. Their posts will be attributed to the current user.', 'wordpress-importer' ), esc_html($this->authors[$old_login]['author_display_name']) );
 					if ( defined('IMPORT_DEBUG') && IMPORT_DEBUG )
@@ -371,10 +379,10 @@ class WP_Import extends WP_Importer {
 			}
 
 			// failsafe: if the user_id was invalid, default to the current user
-			if ( ! isset( $this->author_mapping[$old_login] ) ) {
+			if ( ! isset( $this->author_mapping[$santized_old_login] ) ) {
 				if ( $old_id )
 					$this->processed_authors[$old_id] = (int) get_current_user_id();
-				$this->author_mapping[$old_login] = (int) get_current_user_id();
+				$this->author_mapping[$santized_old_login] = (int) get_current_user_id();
 			}
 		}
 	}
@@ -393,7 +401,8 @@ class WP_Import extends WP_Importer {
 			$term_id = term_exists( $cat['category_nicename'], 'category' );
 			if ( $term_id ) {
 				if ( is_array($term_id) ) $term_id = $term_id['term_id'];
-				$this->processed_terms[intval($cat['term_id'])] = (int) $term_id;
+				if ( isset($cat['term_id']) )
+					$this->processed_terms[intval($cat['term_id'])] = (int) $term_id;
 				continue;
 			}
 
@@ -408,7 +417,8 @@ class WP_Import extends WP_Importer {
 
 			$id = wp_insert_category( $catarr );
 			if ( ! is_wp_error( $id ) ) {
-				$this->processed_terms[intval($cat['term_id'])] = $id;
+				if ( isset($cat['term_id']) )
+					$this->processed_terms[intval($cat['term_id'])] = $id;
 			} else {
 				printf( __( 'Failed to import category %s', 'wordpress-importer' ), esc_html($cat['category_nicename']) );
 				if ( defined('IMPORT_DEBUG') && IMPORT_DEBUG )
@@ -435,7 +445,8 @@ class WP_Import extends WP_Importer {
 			$term_id = term_exists( $tag['tag_slug'], 'post_tag' );
 			if ( $term_id ) {
 				if ( is_array($term_id) ) $term_id = $term_id['term_id'];
-				$this->processed_terms[intval($tag['term_id'])] = (int) $term_id;
+				if ( isset($tag['term_id']) )
+					$this->processed_terms[intval($tag['term_id'])] = (int) $term_id;
 				continue;
 			}
 
@@ -444,7 +455,8 @@ class WP_Import extends WP_Importer {
 
 			$id = wp_insert_term( $tag['tag_name'], 'post_tag', $tagarr );
 			if ( ! is_wp_error( $id ) ) {
-				$this->processed_terms[intval($tag['term_id'])] = $id['term_id'];
+				if ( isset($tag['term_id']) )
+					$this->processed_terms[intval($tag['term_id'])] = $id['term_id'];
 			} else {
 				printf( __( 'Failed to import post tag %s', 'wordpress-importer' ), esc_html($tag['tag_name']) );
 				if ( defined('IMPORT_DEBUG') && IMPORT_DEBUG )
@@ -471,7 +483,8 @@ class WP_Import extends WP_Importer {
 			$term_id = term_exists( $term['slug'], $term['term_taxonomy'] );
 			if ( $term_id ) {
 				if ( is_array($term_id) ) $term_id = $term_id['term_id'];
-				$this->processed_terms[intval($term['term_id'])] = (int) $term_id;
+				if ( isset($term['term_id']) )
+					$this->processed_terms[intval($term['term_id'])] = (int) $term_id;
 				continue;
 			}
 
@@ -486,7 +499,8 @@ class WP_Import extends WP_Importer {
 
 			$id = wp_insert_term( $term['term_name'], $term['term_taxonomy'], $termarr );
 			if ( ! is_wp_error( $id ) ) {
-				$this->processed_terms[intval($term['term_id'])] = $id['term_id'];
+				if ( isset($term['term_id']) )
+					$this->processed_terms[intval($term['term_id'])] = $id['term_id'];
 			} else {
 				printf( __( 'Failed to import %s %s', 'wordpress-importer' ), esc_html($term['term_taxonomy']), esc_html($term['term_name']) );
 				if ( defined('IMPORT_DEBUG') && IMPORT_DEBUG )
@@ -516,7 +530,7 @@ class WP_Import extends WP_Importer {
 				continue;
 			}
 
-			if ( isset( $this->processed_posts[$post['post_id']] ) )
+			if ( isset( $this->processed_posts[$post['post_id']] ) && ! empty( $post['post_id'] ) )
 				continue;
 
 			if ( $post['status'] == 'auto-draft' )
@@ -530,7 +544,7 @@ class WP_Import extends WP_Importer {
 			$post_type_object = get_post_type_object( $post['post_type'] );
 
 			$post_exists = post_exists( $post['post_title'], '', $post['post_date'] );
-			if ( $post_exists ) {
+			if ( $post_exists && get_post_type( $post_exists ) == $post['post_type'] ) {
 				printf( __('%s &#8220;%s&#8221; already exists.', 'wordpress-importer'), $post_type_object->labels->singular_name, esc_html($post['post_title']) );
 				echo '<br />';
 				$comment_post_ID = $post_id = $post_exists;
@@ -566,6 +580,20 @@ class WP_Import extends WP_Importer {
 
 				if ( 'attachment' == $postdata['post_type'] ) {
 					$remote_url = ! empty($post['attachment_url']) ? $post['attachment_url'] : $post['guid'];
+
+					// try to use _wp_attached file for upload folder placement to ensure the same location as the export site
+					// e.g. location is 2003/05/image.jpg but the attachment post_date is 2010/09, see media_handle_upload()
+					$postdata['upload_date'] = $post['post_date'];
+					if ( isset( $post['postmeta'] ) ) {
+						foreach( $post['postmeta'] as $meta ) {
+							if ( $meta['key'] == '_wp_attached_file' ) {
+								if ( preg_match( '%^[0-9]{4}/[0-9]{2}%', $meta['value'], $matches ) )
+									$postdata['upload_date'] = $matches[0];
+								break;
+							}
+						}
+					}
+
 					$comment_post_ID = $post_id = $this->process_attachment( $postdata, $remote_url );
 				} else {
 					$comment_post_ID = $post_id = wp_insert_post( $postdata, true );
@@ -633,6 +661,9 @@ class WP_Import extends WP_Importer {
 					$newcomments[$comment_id]['comment_approved']     = $comment['comment_approved'];
 					$newcomments[$comment_id]['comment_type']         = $comment['comment_type'];
 					$newcomments[$comment_id]['comment_parent'] 	  = $comment['comment_parent'];
+					$newcomments[$comment_id]['commentmeta']          = isset( $comment['commentmeta'] ) ? $comment['commentmeta'] : array();
+					if ( isset( $this->processed_authors[$comment['comment_user_id']] ) )
+						$newcomments[$comment_id]['user_id'] = $this->processed_authors[$comment['comment_user_id']];
 				}
 				ksort( $newcomments );
 
@@ -643,6 +674,12 @@ class WP_Import extends WP_Importer {
 							$comment['comment_parent'] = $inserted_comments[$comment['comment_parent']];
 						$comment = wp_filter_comment( $comment );
 						$inserted_comments[$key] = wp_insert_comment( $comment );
+
+						foreach( $comment['commentmeta'] as $meta ) {
+							$value = maybe_unserialize( $meta['value'] );
+							add_comment_meta( $inserted_comments[$key], $meta['key'], $value );
+						}
+
 						$num_comments++;
 					}
 				}
@@ -667,7 +704,7 @@ class WP_Import extends WP_Importer {
 						if ( ! $value )
 							$value = maybe_unserialize( $meta['value'] );
 
-						update_post_meta( $post_id, $key, $value );
+						add_post_meta( $post_id, $key, $value );
 						do_action( 'import_post_meta', $post_id, $key, $value );
 
 						// if the post has a featured image, take note of this in case of remap
@@ -800,12 +837,15 @@ class WP_Import extends WP_Importer {
 		$post_id = wp_insert_attachment( $post, $upload['file'] );
 		wp_update_attachment_metadata( $post_id, wp_generate_attachment_metadata( $post_id, $upload['file'] ) );
 
-		// remap the thumbnail url.  this isn't perfect because we're just guessing the original url.
-		if ( preg_match( '@^image/@', $info['type'] ) && $thumb_url = wp_get_attachment_thumb_url( $post_id ) ) {
+		// remap resized image URLs, works by stripping the extension and remapping the URL stub.
+		if ( preg_match( '!^image/!', $info['type'] ) ) {
 			$parts = pathinfo( $url );
-			$ext = $parts['extension'];
-			$name = basename($parts['basename'], ".{$ext}");
-			$this->url_remap[$parts['dirname'] . '/' . $name . '.thumbnail.' . $ext] = $thumb_url;
+			$name = basename( $parts['basename'], ".{$parts['extension']}" ); // PATHINFO_FILENAME in PHP 5.2
+
+			$parts_new = pathinfo( $upload['url'] );
+			$name_new = basename( $parts_new['basename'], ".{$parts_new['extension']}" );
+
+			$this->url_remap[$parts['dirname'] . '/' . $name] = $parts_new['dirname'] . '/' . $name_new;
 		}
 
 		return $post_id;
@@ -819,13 +859,11 @@ class WP_Import extends WP_Importer {
 	 * @return array|WP_Error Local file location details on success, WP_Error otherwise
 	 */
 	function fetch_remote_file( $url, $post ) {
-		add_filter( 'http_request_timeout', array( &$this, 'bump_request_timeout' ) );
-
 		// extract the file name and extension from the url
 		$file_name = basename( $url );
 
 		// get placeholder file in the upload dir with a unique, sanitized filename
-		$upload = wp_upload_bits( $file_name, 0, '', $post['post_date'] );
+		$upload = wp_upload_bits( $file_name, 0, '', $post['upload_date'] );
 		if ( $upload['error'] )
 			return new WP_Error( 'upload_dir_error', $upload['error'] );
 
@@ -864,8 +902,8 @@ class WP_Import extends WP_Importer {
 
 		// keep track of the old and new urls so we can substitute them later
 		$this->url_remap[$url] = $upload['url'];
-		$this->url_remap[$post['guid']] = $upload['url'];
-		// if the remote url is redirected somewhere else, keep track of the destination too
+		$this->url_remap[$post['guid']] = $upload['url']; // r13735, really needed?
+		// keep track of the destination if the remote url is redirected somewhere else
 		if ( isset($headers['x-final-location']) && $headers['x-final-location'] != $url )
 			$this->url_remap[$headers['x-final-location']] = $upload['url'];
 
@@ -981,7 +1019,7 @@ class WP_Import extends WP_Importer {
 	function greet() {
 		echo '<div class="narrow">';
 		echo '<p>'.__( 'Howdy! Upload your WordPress eXtended RSS (WXR) file and we&#8217;ll import the posts, pages, comments, custom fields, categories, and tags into this site.', 'wordpress-importer' ).'</p>';
-		echo '<p>'.__( 'Choose a WXR file to upload, then click Upload file and import.', 'wordpress-importer' ).'</p>';
+		echo '<p>'.__( 'Choose a WXR (.xml) file to upload, then click Upload file and import.', 'wordpress-importer' ).'</p>';
 		wp_import_upload_form( 'admin.php?import=wordpress&amp;step=1' );
 		echo '</div>';
 	}
@@ -1046,3 +1084,5 @@ class WP_Import extends WP_Importer {
 }
 
 } // class_exists( 'WP_Importer' )
+
+

@@ -34,15 +34,15 @@ class avia_tweetbox extends WP_Widget {
 
 		extract($args, EXTR_SKIP);
 		echo $before_widget;
-		
+
 		$title = empty($instance['title']) ? '' : apply_filters('widget_title', $instance['title']);
-		$count = empty($instance['count']) ? '' : apply_filters('widget_title', $instance['count']);
-		$username = empty($instance['username']) ? '' : apply_filters('widget_title', $instance['username']);
-		$exclude_replies = empty($instance['exclude_replies']) ? '' : apply_filters('widget_title', $instance['exclude_replies']);
-		$time = empty($instance['time']) ? 'no' : apply_filters('widget_title', $instance['time']);
-		$display_image = empty($instance['display_image']) ? 'no' : apply_filters('widget_title', $instance['display_image']);
+		$count = empty($instance['count']) ? '' : $instance['count'];
+		$username = empty($instance['username']) ? '' : $instance['username'];
+		$exclude_replies = empty($instance['exclude_replies']) ? '' : $instance['exclude_replies'];
+		$time = empty($instance['time']) ? 'no' : $instance['time'];
+		$display_image = empty($instance['display_image']) ? 'no' : $instance['display_image'];
 		
-		if ( !empty( $title ) ) { echo $before_title . "<a href='http://twitter.com/$username/' title='$title'>".$title ."</a>". $after_title; };
+		if ( !empty( $title ) ) { echo $before_title . "<a href='http://twitter.com/$username/' title='".strip_tags($title)."'>".$title ."</a>". $after_title; };
 		
 		$messages = tweetbox_get_tweet($count, $username, $widget_id, $time, $exclude_replies, $display_image);
 		echo $messages;
@@ -218,7 +218,6 @@ function tweetbox_get_tweet($count, $username, $widget_id, $time='yes', $exclude
 			    		
 			    		set_transient(THEMENAME.'_tweetcache_id_'.$username.'_'.$widget_id, 'true', 60*30);
 			    		update_option(THEMENAME.'_tweetcache_'.$username.'_'.$widget_id, $tweets);
-	
 			    	}
 			    }
 			}
@@ -233,13 +232,14 @@ function tweetbox_get_tweet($count, $username, $widget_id, $time='yes', $exclude
 		
 	    if(isset($tweets[0]))
 	    {	
-	    
+	    	$time_format = apply_filters( 'avia_widget_time' , get_option('date_format')." - ".get_option('time_format') );
+	        
 	    	foreach ($tweets as $message)
 	    	{	
 	    		$output .= '<li class="tweet">';
 	    		if($avatar == "yes") $output .= '<div class="tweet-thumb"><a href="http://twitter.com/'.$username.'" title=""><img src="'.$message['user']['image'].'" alt="" /></a></div>';
 	    		$output .= '<div class="tweet-text avatar_'.$avatar.'">'.$message['text'];
-	    		if($time == "yes") $output .= '<div class="tweet-time">'.date_i18n( get_option('date_format')." - ".get_option('time_format'), $message['created'] + $message['user']['utc_offset']).'</div>';
+	    		if($time == "yes") $output .= '<div class="tweet-time">'.date_i18n( $time_format, $message['created'] + $message['user']['utc_offset']).'</div>';
 	    		$output .= '</div></li>';
 			}
 	    }
@@ -303,13 +303,16 @@ class avia_newsbox extends WP_Widget {
 	function widget($args, $instance) 
 	{	
 	
+		global $avia_config;
+		
 		extract($args, EXTR_SKIP);
 		echo $before_widget;
 		
 		$title = empty($instance['title']) ? '' : apply_filters('widget_title', $instance['title']);
-		$count = empty($instance['count']) ? '' : apply_filters('widget_entry_title', $instance['count']);
-		$cat = empty($instance['cat']) ? '' : apply_filters('widget_comments_title', $instance['cat']);
+		$count = empty($instance['count']) ? '' : $instance['count'];
+		$cat = empty($instance['cat']) ? '' : $instance['cat'];
 		$excerpt = empty($instance['excerpt']) ? '' : $instance['excerpt'];
+		$image_size = isset($avia_config['widget_image_size']) ? $avia_config['widget_image_size'] : 'widget';
 		
 		if ( !empty( $title ) ) { echo $before_title . $title . $after_title; };
 		
@@ -350,37 +353,55 @@ class avia_newsbox extends WP_Widget {
 		
 		if($additional_loop->have_posts()) : 
 		
-		echo '<ul class="news-wrap">';
+		
+		
+		echo '<ul class="news-wrap image_size_'.$image_size.'">';
 		while ($additional_loop->have_posts()) : $additional_loop->the_post();
 		
-		echo '<li class="news-content">';
+		$format = "";
+		if(empty($this->avia_post_type)) 	$format = $this->avia_post_type;
+		if(empty($format)) 					$format = get_post_format();
+     	if(empty($format)) 					$format = 'standard';
+		
+		echo '<li class="news-content post-format-'.$format.'">';
 		
 		//check for preview images:
 		$image = "";
 		$slides = avia_post_meta(get_the_ID(), 'slideshow', true);
 		
+		
+		
 		if( $slides != "" && !empty( $slides[0]['slideshow_image'] ) )
 		{
-			$image = avia_image_by_id($slides[0]['slideshow_image'], 'widget', 'image');
+			$image = avia_image_by_id($slides[0]['slideshow_image'], $image_size, 'image');
 		}
 		
 		if(!$image && current_theme_supports( 'post-thumbnails' ))
 		{
-			$image = get_the_post_thumbnail( get_the_ID(), 'related' );
+			$image = get_the_post_thumbnail( get_the_ID(), $image_size );
 		}
+		
+		$time_format = apply_filters( 'avia_widget_time' , get_option('date_format')." - ".get_option('time_format') );
+		
 		
 		echo "<a class='news-link' title='".get_the_title()."' href='".get_permalink()."'>";
 		echo "<span class='news-thumb'>";
 		echo $image;
 		echo "</span>";
-		echo "<strong class='news-headline'>".get_the_title();
-		echo "<span class='news-time'>".get_the_time("F j, Y, g:i a")."</span>";
-		echo "</strong>";
+		if(empty($avia_config['widget_image_size']) || 'display title and excerpt' != $excerpt) { echo "<strong class='news-headline'>".get_the_title()."<span class='news-time'>".get_the_time($time_format)."</span></strong>";  }
 		echo "</a>";
 		
 		if('display title and excerpt' == $excerpt)
 		{
 			echo "<div class='news-excerpt'>";
+			
+			if(!empty($avia_config['widget_image_size']))
+			{
+				echo "<a class='news-link-inner' title='".get_the_title()."' href='".get_permalink()."'>"; 
+				echo "<strong class='news-headline'>".get_the_title()."</strong>"; 
+				echo "</a>";
+				echo "<span class='news-time'>".get_the_time($time_format)."</span>";
+			}
 			the_excerpt();
 			echo "</div>";
 		}
@@ -542,8 +563,8 @@ class avia_socialcount extends WP_Widget {
 		// prints the widget
 
 		extract($args, EXTR_SKIP);
-		$twitter = empty($instance['twitter']) ? '' : apply_filters('widget_title', $instance['twitter']);
-		$rss 	 = empty($instance['rss'])     ? '' : apply_filters('widget_title', $instance['rss']);
+		$twitter = empty($instance['twitter']) ? '' : $instance['twitter'];
+		$rss 	 = empty($instance['rss'])     ? '' : $instance['rss'];
 		$rss = preg_replace('!https?:\/\/feeds.feedburner.com\/!','',$rss);
 		
 		$follower = $this->count_followers($twitter, $rss, $widget_id);
@@ -562,10 +583,21 @@ class avia_socialcount extends WP_Widget {
 				echo "<a href='$link' class='asc_twitter $addClass'><strong class='asc_count'>".$follower['twitter']."</strong><span>".__('Follower','avia_framework')."</span></a>";
 			}
 			
-			if(isset($follower['rss']))
+			if(isset($follower['rss']) && $rss)
 			{
 				$link = 'http://feeds.feedburner.com/'.$rss;
-				echo "<a href='$link' class='asc_rss $addClass'><strong class='asc_count'>".$follower['rss']."</strong><span>".__('Subscribers','avia_framework')."</span></a>";
+				
+				if(is_numeric($follower['rss']))
+				{
+					$feed_text = __('Subscribers','avia_framework');
+				}
+				else
+				{
+					$follower['rss'] = __('Subscribe','avia_framework');
+					$feed_text = __('to RSS Feed','avia_framework');
+				}
+				
+				echo "<a href='$link' class='asc_rss $addClass'><strong class='asc_count'>".$follower['rss']."</strong><span>".$feed_text."</span></a>";
 			}
 
 			echo $after_widget;
@@ -575,9 +607,8 @@ class avia_socialcount extends WP_Widget {
 	function count_followers($twitter, $rss, $widget_id)
 	{
 		$follower = array();
-		$optionkey = strtolower(THEMENAME.'_follower_cache_id_'.$widget_id);
+		$optionkey = strtolower(THEMENAME.'fc_id'.$widget_id);
 		$cache = get_transient($optionkey);
-		
 		
 		if($cache)
 		{
@@ -589,6 +620,7 @@ class avia_socialcount extends WP_Widget {
 			if($twitter != "")
 			{
 				$twittercount = wp_remote_get( 'http://api.twitter.com/1/statuses/user_timeline.xml?screen_name='.$twitter );
+				
 				if (!is_wp_error($twittercount)) 
 				{
 					$xml = simplexml_load_string($twittercount['body']);
@@ -608,11 +640,15 @@ class avia_socialcount extends WP_Widget {
 
 				if (!is_wp_error($feedcount)) 
 				{
-					$xml = simplexml_load_string($feedcount['body']);
+					$xml = @simplexml_load_string($feedcount['body']);
 					
 					if(is_object($xml->feed->entry))
 					{
 						$follower['rss'] = (int) $xml->feed->entry->attributes()->circulation;
+					}
+					else
+					{
+						$follower['rss'] = true;
 					}
 				}
 			}
@@ -641,7 +677,7 @@ class avia_socialcount extends WP_Widget {
 			$instance[$key]	= strip_tags($new_instance[$key]);
 		}
 	
-		delete_transient(THEMENAME.'_follower_cache_id_'.$this->id_base."-".$this->number);
+		delete_transient(strtolower(THEMENAME.'fc_id'.$this->id_base."-".$this->number));
 		return $instance;
 	}
 
@@ -699,9 +735,9 @@ class avia_partner_widget extends WP_Widget {
 		$kriesiaddwidget ++;
 		
 		$title = empty($instance['title']) ? '' : apply_filters('widget_title', $instance['title']);
-		$image_url = empty($instance['image_url']) ? '<span class="avia_parnter_empty">'.__('Advertise here','avia_framework').'</span>' : '<img class="rounded" src="'.$instance['image_url'].'" title="" alt=""/>';
+		$image_url = empty($instance['image_url']) ? '<span class="avia_parnter_empty"><span>'.__('Advertise here','avia_framework').'</span></span>' : '<img class="rounded" src="'.$instance['image_url'].'" title="" alt=""/>';
 		$ref_url = empty($instance['ref_url']) ? '#' : apply_filters('widget_comments_title', $instance['ref_url']);
-		$image_url2 = empty($instance['image_url2']) ? '<span class="avia_parnter_empty">'.__('Advertise here','avia_framework').'</span>' : '<img class="rounded" src="'.$instance['image_url2'].'" title="" alt=""/>';
+		$image_url2 = empty($instance['image_url2']) ? '<span class="avia_parnter_empty"><span>'.__('Advertise here','avia_framework').'</span></span>' : '<img class="rounded" src="'.$instance['image_url2'].'" title="" alt=""/>';
 		$ref_url2 = empty($instance['ref_url2']) ? '#' : apply_filters('widget_comments_title', $instance['ref_url2']);
 
 		if ( !empty( $title ) ) { echo $before_title . $title . $after_title; };
@@ -875,7 +911,12 @@ if (!function_exists('avia_get_post_list'))
 		echo '<ul class="news-wrap">';
 		while ($additional_loop->have_posts()) : $additional_loop->the_post();
 		
-		echo '<li class="news-content">';
+		$format = "";
+		if(get_post_type() != 'post') 		$format = get_post_type();
+		if(empty($format)) 					$format = get_post_format();
+     	if(empty($format)) 					$format = 'standard';
+		
+		echo '<li class="news-content post-format-'.$format.'">';
 		
 		//check for preview images:
 		$image = "";
@@ -886,12 +927,14 @@ if (!function_exists('avia_get_post_list'))
 			$image = avia_image_by_id($slides[0]['slideshow_image'], 'widget', 'image');
 		}
 		
+		$time_format = apply_filters( 'avia_widget_time' , get_option('date_format')." - ".get_option('time_format') );
+		
 		echo "<a class='news-link' title='".get_the_title()."' href='".get_permalink()."'>";
 		echo "<span class='news-thumb'>";
 		echo $image;
 		echo "</span>";
 		echo "<strong class='news-headline'>".avia_backend_truncate(get_the_title(), 55," ");
-		echo "<span class='news-time'>".get_the_time("F j, Y, g:i a")."</span>";
+		echo "<span class='news-time'>".get_the_time($time_format)."</span>";
 		echo "</strong>";
 		echo "</a>";
 		
@@ -918,6 +961,9 @@ if (!function_exists('avia_get_post_list'))
 
 if (!function_exists('avia_get_comment_list')) 
 {
+
+	$time_format = apply_filters( 'avia_widget_time' , get_option('date_format')." - ".get_option('time_format') );
+
 	function avia_get_comment_list($avia_new_query) 
 	{
 		global $avia_config;
@@ -935,7 +981,7 @@ if (!function_exists('avia_get_comment_list'))
 		echo get_avatar($comment,'48');
 		echo "</span>";
 		echo "<strong class='news-headline'>".avia_backend_truncate($comment->comment_content, 55," ");
-		echo "<span class='news-time'>".get_the_time("F j, g:i a", $comment->comment_post_ID)." by ".$comment->comment_author."</span>";
+		echo "<span class='news-time'>".get_the_time($time_format, $comment->comment_post_ID)." by ".$comment->comment_author."</span>";
 		echo "</strong>";
 		echo "</a>";
 
@@ -948,3 +994,207 @@ if (!function_exists('avia_get_comment_list'))
 		endif;
 	}
 }
+
+
+
+/*
+	Google Maps Widget
+
+	Copyright 2009  Clark Nikdel Powell  (email : taylor@cnpstudio.com)
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+
+
+class avia_google_maps extends WP_Widget {
+
+	// constructor
+	function avia_google_maps() {
+		$widget_ops = array('classname' => 'avia_google_maps', 'description' => __( 'Add a google map to your blog or site') );
+		$this->WP_Widget('avia_google_maps', THEMENAME.' Google Maps Widget', $widget_ops);
+
+	}
+	
+	// output the content of the widget
+	function widget($args, $instance) {		
+		extract( $args );
+		
+		$title = empty($instance['title']) ? '' : apply_filters('widget_title', esc_attr($instance['title']));
+		
+		print $before_widget;
+		if (!empty($instance['title'])) { print $before_title.$title.$after_title; }
+		print avia_printmap($instance['lat'], $instance['lng'], $instance['zoom'], $instance['type'], $instance['content'], $instance['directionsto']);
+		print $after_widget;
+	}
+	
+	// process widget options to be saved
+	function update($new_instance, $old_instance) {		
+		print_r($old_instance);
+		print_r($new_instance);
+		return $new_instance;
+	}
+	
+	// output the options form on admin
+	function form($instance) {
+		global $wpdb;
+		$title = empty($instance['title']) ? '' : esc_attr($instance['title']);
+		$lat = empty($instance['lat']) ? '' : esc_attr($instance['lat']);
+		$lng = empty($instance['lng']) ? '' : esc_attr($instance['lng']);
+		$zoom = empty($instance['zoom']) ? '15' : esc_attr($instance['zoom']);
+		$type = empty($instance['type']) ? 'ROADMAP' : esc_attr($instance['type']);
+		$directionsto = empty($instance['directionsto']) ? '' : esc_attr($instance['directionsto']);
+		$content = empty($instance['content']) ? '' : esc_attr($instance['content']);
+		?>
+			<p>
+			<label for="<?php print $this->get_field_id('title'); ?>"><?php _e('Title:'); ?></label>
+			<input class="widefat" id="<?php print $this->get_field_id('title'); ?>" name="<?php print $this->get_field_name('title'); ?>" type="text" value="<?php print $title; ?>" />
+			</p>
+			<p>
+			Enter the latitude and longitude of the location. You can <a target='_blank' href='http://www.getlatlon.com/'>fetch them here</a><br/><br/>
+			<label for="<?php print $this->get_field_id('lat'); ?>"><?php _e('Latitude:'); ?></label>
+			<input class="widefat" id="<?php print $this->get_field_id('lat'); ?>" name="<?php print $this->get_field_name('lat'); ?>" type="text" value="<?php print $lat; ?>" />
+			</p>
+			<p>
+			<label for="<?php print $this->get_field_id('lng'); ?>"><?php _e('Longitude:'); ?></label>
+			<input class="widefat" id="<?php print $this->get_field_id('lng'); ?>" name="<?php print $this->get_field_name('lng'); ?>" type="text" value="<?php print $lng; ?>" />
+			</p>
+			
+			<p>
+			<label for="<?php print $this->get_field_id('zoom'); ?>"><?php _e('Zoom Level: <small>(1-19)</small>'); ?></label>
+			<select class="widefat" id="<?php echo $this->get_field_id('zoom'); ?>" name="<?php echo $this->get_field_name('zoom'); ?>">
+				<?php 
+				$list = "";
+				$answers = array(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19);
+				foreach ($answers as $answer)
+				{
+					$selected = "";
+					if($answer == $zoom) $selected = 'selected="selected"';
+				
+					$list .= "<option $selected value='$answer'>$answer</option>";
+				}
+				$list .= "</select>";
+				echo $list;
+				?>
+				
+			
+			</p>
+			
+			<p>
+			<label for="<?php print $this->get_field_id('type'); ?>"><?php _e('Map Type:'); ?></label>
+			
+			<select class="widefat" id="<?php echo $this->get_field_id('type'); ?>" name="<?php echo $this->get_field_name('type'); ?>">
+				<?php 
+				$list = "";
+				$answers = array('ROADMAP', 'SATELLITE', 'HYBRID', 'TERRAIN');
+				foreach ($answers as $answer)
+				{
+					$selected = "";
+					if($answer == $type) $selected = 'selected="selected"';
+				
+					$list .= "<option $selected value='$answer'>$answer</option>";
+				}
+				$list .= "</select>";
+				echo $list;
+				?>
+			
+			</p>
+			<p>
+			<label for="<?php print $this->get_field_id('directionsto'); ?>"><?php _e('Address for directions:'); ?></label>
+			<input class="widefat" id="<?php print $this->get_field_id('directionsto'); ?>" name="<?php print $this->get_field_name('directionsto'); ?>" type="text" value="<?php print $directionsto; ?>" />
+			</p>
+			<p>
+			<label for="<?php print $this->get_field_id('content'); ?>"><?php _e('Info Bubble Content:'); ?></label>
+			<textarea rows="7" class="widefat" id="<?php print $this->get_field_id('content'); ?>" name="<?php print $this->get_field_name('content'); ?>"><?php print $content; ?></textarea>
+			</p>
+		<?php 
+	}
+	
+} // SGMwidget widget
+
+
+
+
+function avia_printmap($lat, $lng, $zoom, $type, $content, $directionsto) {
+	
+	global $avia_config;
+	
+	$SGMoptions = get_option('SGMoptions'); // get options defined in admin page
+	
+	if (!$lat) {$lat = '0';}
+	if (!$lng) {$lng = '0';}
+	if (!$zoom) {$zoom = $SGMoptions['zoom'];} // 1-19
+	if (!$type) {$type = $SGMoptions['type'];} // ROADMAP, SATELLITE, HYBRID, TERRAIN
+	if (!$content) {$content = $SGMoptions['content'];}
+	$output = "";
+	$unique = uniqid();
+	$content = str_replace('&lt;', '<', $content);
+	$content = str_replace('&gt;', '>', $content);
+	$content = mysql_escape_string($content);
+	$directionsForm = "";
+	if ($directionsto) { $directionsForm = "<form method=\"get\" action=\"http://maps.google.com/maps\"><input type=\"hidden\" name=\"daddr\" value=\"".$directionsto."\" /><input type=\"text\" class=\"text\" name=\"saddr\" /><input type=\"submit\" class=\"submit\" value=\"Directions\" /></form>"; }
+	
+	if(empty($avia_config['g_maps_widget_active']))
+	{
+		$output .= "<script type='text/javascript' src='http://maps.google.com/maps/api/js?sensor=false'></script>";
+		$avia_config['g_maps_widget_active'] = 0;
+	}
+	$avia_config['g_maps_widget_active'] ++;
+	$output .= "
+	
+	<script type='text/javascript'>
+		function makeMap_".$avia_config['g_maps_widget_active']."() {
+		
+			var latlng = new google.maps.LatLng(".$lat.", ".$lng.")
+			
+			var myOptions = {
+				zoom: ".$zoom.",
+				center: latlng,
+				mapTypeControl: true,
+				mapTypeControlOptions: {style: google.maps.MapTypeControlStyle.DROPDOWN_MENU},
+				navigationControl: true,
+				navigationControlOptions: {style: google.maps.NavigationControlStyle.SMALL},
+				mapTypeId: google.maps.MapTypeId.".$type."
+			};
+			var map = new google.maps.Map(document.getElementById('avia_google_maps_$unique'), myOptions);
+			
+			var contentString = '<div class=\"infoWindow\">".$content.$directionsForm."</div>';
+			var infowindow = new google.maps.InfoWindow({
+				content: contentString
+			});
+			
+			var marker = new google.maps.Marker({
+				position: latlng,
+				map: map,
+				title: ''
+			});
+			
+			google.maps.event.addListener(marker, 'click', function() {
+			  infowindow.open(map,marker);
+			});
+		}
+		
+		jQuery(document).ready(function() {
+		      makeMap_".$avia_config['g_maps_widget_active']."();
+		});
+		
+	</script>
+	
+	<div id='avia_google_maps_$unique' class='avia_google_maps_container'></div>
+	";
+	
+	return $output;
+	
+}
+

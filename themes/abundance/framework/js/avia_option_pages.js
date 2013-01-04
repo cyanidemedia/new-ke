@@ -15,6 +15,7 @@ jQuery(function($) {
     
     $('#avia_options_page').avia_framework_option_pages();
     $('#avia_options_page').avia_create_option_navigation();
+    $('#avia_options_page .avia_tab_container').avia_media_advanced_plugin();
     	
   });
 
@@ -110,6 +111,7 @@ jQuery(function($) {
 								nonceReset  :	$('input[name=avia-nonce-reset]', hiddenDataContainer).val(),
 								nonceImport  :	$('input[name=avia-nonce-import]', container).val(),
 								ref	   :		$('input[name=_wp_http_referer]', hiddenDataContainer).val(),
+								first_call:		$('input[name=avia_options_first_call]', hiddenDataContainer),
 								saveButtons: 	saveButtons
 							 };
 
@@ -124,6 +126,12 @@ jQuery(function($) {
 			
 			//sidebar toggle
 			methods.sidebarToggle(container);
+			
+			//default saving to database on first call
+			if(saveData.first_call.length > 0)
+			{
+				setTimeout(function(){ methods.save(saveData, true); }, 1000);
+			}
 			
 		});
 	};
@@ -181,17 +189,17 @@ jQuery(function($) {
 		 *  
 		 */
  
-		save: function(passed)
+		save: function(passed, hiddensave)
 		{
-			
+			if(typeof hiddensave == 'undefined') hiddensave = false;
 		
-			var me = passed.data.set,
+			var me = hiddensave == true ? passed : passed.data.set,
 				buttonClicked = $(this),		//button that was clicked
 				elements	= $('input:text, input:hidden, input:radio:checked, input:checkbox, select, textarea','.avia_options_container'), //elements with values
 				dataString = "";		// data string passed to the ajax script
 			
 			//if no options have changed do not save
-			if(buttonClicked.is('.avia_button_inactive')) return false;
+			if(buttonClicked.is('.avia_button_inactive') && !hiddensave) return false;
 			
 			
 			 
@@ -248,22 +256,26 @@ jQuery(function($) {
 					},
 					beforeSend: function()
 					{
-						
+						if(hiddensave) return;
 					
 						//show loader
-						$('.avia_header .avia_loading, .avia_footer .avia_loading',  me.container).css({opacity:0, display:"block", visibility:'visible'}).animate({opacity:1});
+						 $('.avia_header .avia_loading, .avia_footer .avia_loading',  me.container).css({opacity:0, display:"block", visibility:'visible'}).animate({opacity:1});
 						
 						//set buttons to inactive
 						me.saveButtons.addClass('avia_button_inactive');
 					},
 					error: function()
 					{
+						if(hiddensave) return;
+					
 						//allow saving again
-						$('body').avia_alert({the_class:'error', text:'Saving didnt work! <br/> Please wait a few seconds and try again', show:4500});
+						$('body').avia_alert({the_class:'error', text:'Saving didnt work! <br/> Please reload the page and try again', show:4500});
 						me.saveButtons.removeClass('avia_button_inactive');
 					},
 					success: function(response)
 					{
+						if(hiddensave) return;
+					
 						//reset the input elements that tell the php script to clone or remove
 						if(response.match('avia_save'))
 						{
@@ -279,7 +291,7 @@ jQuery(function($) {
 							}
 							else
 							{
-								answer = 'Saving didnt work! <br/> Please wait a few seconds and try again';
+								answer = 'Saving didnt work! <br/> Please reload the page and try again';
 							}
 							
 							$('body').avia_alert({the_class:'error', text: answer , show:4500});
@@ -289,6 +301,8 @@ jQuery(function($) {
 					},
 					complete: function(response)
 					{	
+						if(hiddensave) return;
+					
 						$('.avia_loading',  me.container).fadeOut();
 						
 					}
@@ -304,13 +318,18 @@ jQuery(function($) {
 		 */
 		do_import: function(passed)
 		{
+			
 			var button = $(this),
 				me = passed.data.set,
 				waitLabel = $('.avia_import_wait', me.container),
-				answer = "";
+				answer = "",
+				activate = true;
 								
 			
 			if(button.is('.avia_button_inactive')) return false;
+			
+			activate = confirm('Importing the dummy data will overwrite your current Theme Option settings and delete any custom Templates you have built with the template Builder. Proceed anyways?')
+			if(activate == false) return false;
 			
 			$.ajax({
 						type: "POST",
