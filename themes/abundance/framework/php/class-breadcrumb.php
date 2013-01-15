@@ -253,8 +253,31 @@ function avia_breadcrumbs( $args = array() ) {
 				$trail = array_merge( $trail, avia_breadcrumbs_get_parents( '', $path ) );
 
 			/* If there's an archive page, add it to the trail. */
-			if ( !empty( $post_type_object->has_archive ) && function_exists( 'get_post_type_archive_link' ) )
-				$trail[] = '<a href="' . get_post_type_archive_link( $post_type ) . '" title="' . esc_attr( $post_type_object->labels->name ) . '">' . $post_type_object->labels->name . '</a>';
+			/* If there's an archive page, add it to the trail. */
+			if ( !empty( $post_type_object->has_archive ) && function_exists( 'get_post_type_archive_link' ) ){
+					if (is_product()){
+						$prod_cat = array();
+						//$prod_cat[] = get_the_term_list(get_the_ID(), 'product_cat','','','','');
+						//$trail[] = $prod_cat[0];
+						$prod_cat[] = get_the_term_list(get_the_ID(), 'product_cat','',';','','');
+						$cat_array = explode(";", $prod_cat[0]);
+						$parent = $cat_array[count($cat_array) - 1];
+						if(count($cat_array) >= 2) {
+							$child = $cat_array[count($cat_array) - 2];
+						} else {
+							$child = $cat_array[0];
+						} if(count($cat_array) > 0 ) {
+							if($parent == $child) {
+								$trail_array = $parent;
+							} else {
+								$trail_array = $parent . ' <span class="sep">' . $separator . '</span> ' . $child;
+							}
+							$trail[] = $trail_array;
+						}
+					} else {
+						$trail[] = '<a href="' . get_post_type_archive_link( $post_type ) . '" title="' . esc_attr( $post_type_object->labels->name ) . '">' . $post_type_object->labels->name . '</a>';
+					}
+				}
 		}
 		
 		/* try to build a generic taxonomy trail no matter the post type and taxonomy and terms

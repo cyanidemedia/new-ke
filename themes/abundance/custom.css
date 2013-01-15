@@ -1,0 +1,59 @@
+.woocommerce-page #main .container .clear {
+   clear: none !important;
+}
+
+.jon_add {
+background: url('http://173.254.48.32/~kaecorpc/wp-content/uploads/2012/08/Add24.png');
+width: 24px;
+height: 24px;
+display:inline-block;
+}
+
+.added {
+background: url('http://173.254.48.32/~kaecorpc/wp-content/uploads/2012/08/Accept24.png');
+width: 24px;
+height: 24px;
+display:inline-block;
+}
+
+#jon_demo .loading {
+background:url('http://173.254.48.32/~kaecorpc/wp-content/uploads/2012/08/Refresh24.png');
+-webkit-animation: spin 0.7s infinite linear;
+width: 24px;
+height: 24px;
+display:inline-block;
+}
+
+@-webkit-keyframes spin {
+0% { -webkit-transform: rotate(0deg);}
+100% { -webkit-transform: rotate(360deg);}
+}
+
+.jon_inspect {
+background: url('http://173.254.48.32/~kaecorpc/wp-content/uploads/2012/08/Info24.png');
+width: 24px;
+height: 24px;
+display:inline-block;
+float: right;
+}
+
+.sub_menu .dropdown_link, .shopping_cart_link a, .checkout_link a {
+color: #dcc786 !important;
+}
+
+.sub_menu .dropdown_link:hover 
+{
+border-bottom: 1px solid #dcc786 !important;
+}
+
+#menu-main-menu a, .cart_dropdown_link {
+color: #052a69 !important;
+}
+
+body {
+color: #000 !important;
+}
+
+.cart-subtotal th strong, .total th strong {
+	color: #DCC686;
+}

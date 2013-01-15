@@ -1,2 +1,19 @@
 /* Have fun adding your style here :) - PS: At all times this file should contain a comment or a rule, otherwise opera might act buggy :( */
 
+/* Fixes styling for simple product page */
+.warranty {
+	text-align: center;
+	width: 187px;
+	float: right;
+}
+
+.warranty a img {
+	margin: 0 auto;
+	display: block;
+	clear: both;
+}
+
+.warranty .button {
+	float: right !important;
+	margin-bottom: 10px !important;
+}

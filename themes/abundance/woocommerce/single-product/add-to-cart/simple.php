@@ -27,17 +27,15 @@ if( $product->get_price() === '') return;
 	
 	<form action="<?php echo esc_url( $product->add_to_cart_url() ); ?>" class="cart" method="post" enctype='multipart/form-data'>
 	 	<?php do_action('woocommerce_before_add_to_cart_button'); ?>
-	 	<div class="warranty" style="margin-right:-32px;">
-	 	<?php 
+	 	<div class="warranty">
+	 		<?php 
 	 		if ( ! ( get_option('woocommerce_limit_downloadable_product_qty')=='yes' && $product->is_downloadable() && $product->is_virtual() ) ) 
 	 			?> <input name="quantity" type="hidden" value="1" /> <?php
-	 	?>
-
-	 	<button type="submit" class="button alt"><?php echo apply_filters('single_add_to_cart_text', __('Add to cart', 'woocommerce'), $product->product_type); ?></button>
-	 </div>
-	 	<?php do_action('woocommerce_after_add_to_cart_button'); ?>
-<div class="warranty"><a href="?page_id=869"><p><img src="../wp-content/uploads/2012/04/lifetime-warranty.png" class="warPic" />* click for warranty details</a></div>
-
+	 		?>
+	 		<button type="submit" class="button alt"><?php echo apply_filters('single_add_to_cart_text', __('Add to cart', 'woocommerce'), $product->product_type); ?></button>
+			<a href="?page_id=869" target="_blank"><img src="../wp-content/uploads/2012/04/lifetime-warranty.png" class="warPic" />* click for warranty details</a>
+		</div>
+		<?php do_action('woocommerce_after_add_to_cart_button'); ?>
 	</form>
 	
 	<?php do_action('woocommerce_after_add_to_cart_form'); ?>
