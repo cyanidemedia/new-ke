@@ -96,7 +96,11 @@ require_once( 'includes/helper-templates.php' ); 				// holds some helper functi
 require_once( 'includes/admin/compat.php' );					// compatibility functions for 3rd party plugins
 
 //adds the woocommerce initalisation scripts that add styles and functions
-require_once( 'woocommerce-config/config.php' );			
+require_once( 'woocommerce-config/config.php' );		
+
+// Jonathon McDonald's files
+require_once( 'product-listing-helper.php' );	
+require_once( 'jm-ipad.php' );
 
 //activate framework widgets
 register_widget( 'avia_tweetbox');

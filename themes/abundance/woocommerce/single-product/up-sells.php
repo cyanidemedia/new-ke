@@ -11,7 +11,7 @@
 
 global $woocommerce_loop, $woocommerce, $product;
 $crosssells = $product->get_cross_sells();
-if (sizeof($crosssells)!=0) {
+if ($crosssells && sizeof($crosssells)!=0) {
 ?>
 <div class="upsells products" style="margin:0 0 1em 0;">
 	<h2><?php _e('Buy Accessories Separately', 'woocommerce') ?></h2>

@@ -37,7 +37,6 @@ if (!isset($woocommerce_loop['columns']) || !$woocommerce_loop['columns']) $wooc
 				
 				<h3><?php the_title(); ?></h3>
 				
-				<?php echo $product->get_sku() . '<br />'; ?>
 				
 				<?php do_action('woocommerce_after_shop_loop_item_title'); ?>
 			

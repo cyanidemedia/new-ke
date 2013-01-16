@@ -23,7 +23,7 @@ if(!class_exists('avia_breadcrumb'))
 		$markup = $this->options['before'].$this->options['delimiter'].$this->options['after'];
 		
 		global $post;
-		echo '<p class="breadcrumb"><span class="breadcrumb_info">'.__('You are here:','avia_framework').'</span> <a href="'.get_bloginfo('url').'">';
+		echo '<p class="breadcrumb"><a href="'.get_bloginfo('url').'">';
 			bloginfo('name');
 			echo "</a>";
 			if(!is_front_page()){echo $markup;}
@@ -186,7 +186,7 @@ function avia_breadcrumbs( $args = array() ) {
 	/* Set up the default arguments for the breadcrumb. */
 	$defaults = array(
 		'separator' => '&raquo;',
-		'before' => '<span class="breadcrumb-title">' . __( 'You are here:', $textdomain ) . '</span>',
+		'before' => '',
 		'after' => false,
 		'front_page' => true,
 		'show_home' => __( 'Home', $textdomain ),
