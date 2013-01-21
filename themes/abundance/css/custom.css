@@ -17,3 +17,80 @@
 	float: right !important;
 	margin-bottom: 10px !important;
 }
+
+/* Body Styling */
+#wrap_all {
+	-webkit-box-shadow: none;
+	box-shadow: none;
+}
+
+/* Header Styling */
+
+.rss a {
+	display: none;
+}
+
+#header .container {
+	height: 115px;
+}
+
+/* Navigation Styling */
+.jon_modify {
+	background: #052a69;
+	width: 100%;
+}
+
+#menu-main-menu {
+	background: #052a69;
+	border: none;
+}
+
+#menu-main-menu li a {
+	color: #dcc686;
+}
+
+.sub-menu li a {
+	color: #052a69 !important;
+}
+
+#top .main_menu div .avia_mega > .menu-item:hover > a {
+	color: #052a69;
+}
+
+
+.jon_modify .main_menu {
+	border: none;
+}
+
+.stretched .sub_menu > ul {
+	top: -125px;
+}
+
+.main_menu .avia_mega > li > a {
+	border: none;
+}
+
+
+
+/* Navigation Cart Styling */
+
+.sub_menu .dropdown_link, .shopping_cart_link a, .checkout_link a {
+color: #dcc786 !important;
+}
+
+.sub_menu .dropdown_link:hover 
+{
+border-bottom: 1px solid #dcc786 !important;
+}
+
+
+.cart-subtotal th strong, .total th strong {
+	color: #DCC686;
+}
+
+.cart_subtotal .amount {
+	color: #dcc686;
+}
+a.cart_dropdown_link {
+	color: #dcc686 !important;
+}

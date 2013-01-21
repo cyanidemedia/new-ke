@@ -153,11 +153,13 @@ $style = avia_get_option('boxed','boxed');
 				*   check if a description for submenu items was added and change the menu class accordingly
 				*   modify the output in your wordpress admin backend at appearance->menus
 				*/
+				echo'<div class="jon_modify">';
 				echo "<div class='main_menu'>";
 				$args = array('theme_location'=>'avia', 'fallback_cb' => 'avia_fallback_menu', 'max_columns'=>4);
 				wp_nav_menu($args); 
 				if(avia_woocommerce_enabled()) echo avia_woocommerce_cart_dropdown();
 				echo "</div>";
+				echo '</div>';
 				
 				echo "<div class='sub_menu'>";
 				$args = array('theme_location'=>'avia2', 'fallback_cb' => '');
