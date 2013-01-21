@@ -101,6 +101,7 @@ require_once( 'woocommerce-config/config.php' );
 // Jonathon McDonald's files
 require_once( 'product-listing-helper.php' );	
 require_once( 'jm-ipad.php' );
+require_once( 'jm-cat-fix.php' );
 
 //activate framework widgets
 register_widget( 'avia_tweetbox');
