@@ -13,6 +13,15 @@ if($result){ echo "<script type='text/javascript'>window.location= '".$woocommer
 
 <?php $woocommerce->show_messages(); ?>
 
+<?php if( function_exists('cart_contains_ipad_enclosure') && function_exists('cart_contains_ipad_mount') ): ?>
+	<?php if( cart_contains_ipad_enclosure() && !cart_contains_ipad_mount() ): ?>
+		No mount
+	<?php endif; ?>
+	<?php if( !cart_contains_ipad_enclosure() && cart_contains_ipad_mount() ): ?>
+		No enclosure
+	<?php endif; ?>
+<?php endif; ?>
+
 <form action="<?php echo esc_url( $woocommerce->cart->get_cart_url() ); ?>" method="post">
 <?php do_action( 'woocommerce_before_cart_table' ); ?>
 <table class="shop_table cart" cellspacing="0">

@@ -11,20 +11,38 @@
  *
  * @return String The modified cart message
  */
-function jm_add_to_cart($message) 
+function jm_add_to_cart_ipad_enclosure($message) 
 {
 	global $woocommerce, $product; 
 
-	$message .= " Now choose your rack mount.";
+	$message .= " Now choose your mount.";
 
 	return $message;
 }
+
+/**
+ * Appends a message to the cart that the user should remember
+ * to pick up an enclosure if purchasing a ipad mount
+ *
+ * @return String The modified cart message
+ */
+function jm_add_to_cart_ipad_mount($message) 
+{
+	global $woocommerce, $product; 
+
+	$message .= " Now choose your enclosure.";
+
+	return $message;
+}
+
 
 /**
  * Listens to see if an item is added to the cart.  If it is,
  * this will check to see if the item is a ipad enclosure.  
  * If the item is an ipad enclosure it will then add a filter
  * telling the customer to pick up an ipad enclosure
+ *
+ * @param id Product ID used to instantiate a product
  */
 function jm_add_to_cart_listener( $cart_item_key, $product_id, $quantity, $variation_id, $variation, $cart_item_data )
 {
@@ -39,9 +57,14 @@ function jm_add_to_cart_listener( $cart_item_key, $product_id, $quantity, $varia
 		$categories[] = $term->slug;
 	}
 
-	// If the array contains ipad-enclosures we know this was indeed a enclosure
+	// If the array contains ipad-enclosures we know this was indeed a mount
 	if( in_array('ipad-enclosures', $categories) ) {
-		add_filter('woocommerce_add_to_cart_message', 'jm_add_to_cart', 999);
+		add_filter('woocommerce_add_to_cart_message', 'jm_add_to_cart_ipad_enclosure', 999);
+	}
+
+		// If the array contains ipad-enclosures we know this was indeed a enclosure
+	if( in_array('ipad-mounts', $categories) ) {
+		add_filter('woocommerce_add_to_cart_message', 'jm_add_to_cart_ipad_mount', 999);
 	}
 }
 
