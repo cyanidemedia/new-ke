@@ -65,11 +65,8 @@ function does_cart_contain_product_with_category( $category = '' )
 
 	foreach( $cart_contents as $cart_item ) 
 	{
-		// Construct a product object using the product id
-		$product    = new WC_Product( $cart_item['product_id'] );
-
 		// Get all of the product categories this item belongs too
-		$terms      = wp_get_post_terms( $product->get_post_data()->ID, 'product_cat' );
+		$terms      = wp_get_post_terms( $cart_item['product_id'], 'product_cat' );
 		$categories = array();
 
 		// Add all the categories to an array

@@ -135,6 +135,9 @@ h3.cufon_headings {
 	border-top-left-radius: 0px;
 }
 
+.account_overview_link a span.dropdown_link {
+	border: none !important;
+}
 
 
 /* Navigation Cart Styling */
@@ -143,9 +146,6 @@ h3.cufon_headings {
 color: #dcc786 !important;
 }
 
-.sub_menu .dropdown_link:hover {
-border-bottom: 1px solid #dcc786 !important;
-}
 
 .cart-subtotal th strong, .total th strong {
 	color: #DCC686;

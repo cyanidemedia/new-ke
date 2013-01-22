@@ -15,10 +15,10 @@ if($result){ echo "<script type='text/javascript'>window.location= '".$woocommer
 
 <?php if( function_exists('cart_contains_ipad_enclosure') && function_exists('cart_contains_ipad_mount') ): ?>
 	<?php if( cart_contains_ipad_enclosure() && !cart_contains_ipad_mount() ): ?>
-		No mount
+		You have an iPad enclosure, but no enclosure mount.  You can view all enclosure mounts <a href="/?product_cat=ipad-mounts">here</a>.  
 	<?php endif; ?>
 	<?php if( !cart_contains_ipad_enclosure() && cart_contains_ipad_mount() ): ?>
-		No enclosure
+		You have an iPad enclosure mount, but no actual enclosure.  You can view all iPad enclosures <a href="/?product_cat=ipad-enclosures">here</a>.  
 	<?php endif; ?>
 <?php endif; ?>
 
