@@ -31,7 +31,7 @@
 <link rel="stylesheet" href="<?php echo get_bloginfo('template_url'); ?>/css/<?php avia_option('stylesheet', 'minimal-skin.css'); ?>" type="text/css" media="screen"/>
 <link rel="stylesheet" href="<?php echo get_bloginfo('template_url'); ?>/css/shortcodes.css" type="text/css" media="screen"/>
 <link rel="stylesheet" href="<?php echo get_bloginfo('template_url'); ?>/css/slideshow.css" type="text/css" media="screen"/>
-
+<link rel="icon" type="image/png" href="<?php bloginfo( 'url' ); ?>/wp-content/uploads/2013/01/kae-favicon.png" />
 
 <?php
 
