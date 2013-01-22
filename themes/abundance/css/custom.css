@@ -1,6 +1,14 @@
 /* Have fun adding your style here :) - PS: At all times this file should contain a comment or a rule, otherwise opera might act buggy :( */
 
-/* Fixes styling for simple product page */
+
+
+
+/* Fixes styling for product page */
+
+img.variation-warranty {
+	margin: 0 auto;
+}
+
 .warranty {
 	text-align: center;
 	width: 187px;
@@ -18,11 +26,54 @@
 	margin-bottom: 10px !important;
 }
 
+#top .button, #top #submit {
+	background: #052A69;
+	color: #DCC686;
+}
+
+.variations_form {
+	clear: both;
+}
+
+.single_variation .price .amount {
+	font-size: 30px !important;
+	line-height: 30px !important;
+}
+
+
+
+
 /* Body Styling */
+
 #wrap_all {
 	-webkit-box-shadow: none;
 	box-shadow: none;
 }
+
+::selection {
+	background: #2269e3;
+}
+
+a {
+	color: #052a69;
+}
+
+a:hover {
+	color: #052a69;
+}
+
+h1 {
+	color: #000;
+}
+
+#top .title_container h1 {
+	color: #000;
+}
+
+h3.cufon_headings {
+	color: #000;
+}
+
 
 /* Header Styling */
 
@@ -34,7 +85,16 @@
 	height: 115px;
 }
 
+#s {
+	height: 12px;
+}
+
+
+
+
+
 /* Navigation Styling */
+
 .jon_modify {
 	background: #052a69;
 	width: 100%;
@@ -70,6 +130,11 @@
 	border: none;
 }
 
+#top div .main_menu .avia_mega > li:first-child > a {
+	border-radius: none;
+	border-top-left-radius: 0px;
+}
+
 
 
 /* Navigation Cart Styling */
@@ -78,11 +143,9 @@
 color: #dcc786 !important;
 }
 
-.sub_menu .dropdown_link:hover 
-{
+.sub_menu .dropdown_link:hover {
 border-bottom: 1px solid #dcc786 !important;
 }
-
 
 .cart-subtotal th strong, .total th strong {
 	color: #DCC686;
@@ -91,6 +154,7 @@ border-bottom: 1px solid #dcc786 !important;
 .cart_subtotal .amount {
 	color: #dcc686;
 }
+
 a.cart_dropdown_link {
 	color: #dcc686 !important;
 }
