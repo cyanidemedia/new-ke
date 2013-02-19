@@ -25,10 +25,13 @@
                 if(is_array($attachments))
                 {
                 	echo "<div class='footer-logos'><div class='container'>";
-	                foreach($attachments as $key => $attachment) 
-					{
-						echo avia_image_by_id($attachment->ID);
-					}
+                	?>
+                		<div class="jsprite-espn-gray"></div><div class="jsprite-nascar-gray"></div><div class="jsprite-hbo-gray"></div><div class="jsprite-cnn-gray"></div>
+                	<?php
+	    			// foreach($attachments as $key => $attachment) 
+					// {
+					// 	echo avia_image_by_id($attachment->ID);
+					// }
 					echo "</div></div>";
 				}
 			}

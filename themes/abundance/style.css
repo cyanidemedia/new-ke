@@ -2223,3 +2223,36 @@ font-size: 19px;
 padding:0px 0 20px 0;
 }
 
+
+
+/************************************************************************
+Sprite Logos
+*************************************************************************/
+
+.jsprite-cnn-gray{ 
+	background: url(images/csg-5123d340c59e2.png) no-repeat top left;
+	background-position: 0 -99px; 
+	width: 102px; 
+	height: 49px; 
+	display: inline-block; 
+	margin-right: 5px;
+}
+.jsprite-cnn-gray:hover{ cursor: pointer; margin-right: 5px; display: inline-block; background: url(images/csg-5123d340c59e2.png) no-repeat top left; background-position: 0 0; width: 102px; height: 49px; }  
+ 
+.jsprite-espn-gray{ margin-right: 5px; display: inline-block; background: url(images/csg-5123d340c59e2.png) no-repeat top left; background-position: 0 -297px; width: 174px; height: 49px; } 
+.jsprite-espn-gray:hover{ cursor: pointer; margin-right: 5px; display: inline-block; background: url(images/csg-5123d340c59e2.png) no-repeat top left; background-position: 0 -198px; width: 174px; height: 49px; }
+
+
+.jsprite-hbo-gray{ margin-right: 5px; display: inline-block; background: url(images/csg-5123d340c59e2.png) no-repeat top left; background-position: 0 -495px; width: 81px; height: 49px; } 
+.jsprite-hbo-gray:hover{ cursor: pointer; margin-right: 5px; display: inline-block; background: url(images/csg-5123d340c59e2.png) no-repeat top left; background-position: 0 -396px; width: 81px; height: 49px; } 
+
+
+.jsprite-nascar-gray{ margin-right: 5px; display: inline-block; background: url(images/csg-5123d340c59e2.png) no-repeat top left; background-position: 0 -693px; width: 270px; height: 49px; } 
+.jsprite-nascar-gray:hover{ cursor: pointer; margin-right: 5px; display: inline-block; background: url(images/csg-5123d340c59e2.png) no-repeat top left; background-position: 0 -594px; width: 270px; height: 49px; } 
+
+.footer-sprite {
+	width: 650px;
+	margin: 0 auto;
+	display: block;
+	margin-top: 5px;
+}

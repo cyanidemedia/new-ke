@@ -1,9 +1,29 @@
 /* Have fun adding your style here :) - PS: At all times this file should contain a comment or a rule, otherwise opera might act buggy :( */
 
+/************************************************
+ * Forms
+ ***********************************************/
+.control-group {
+	margin-bottom: 5px;
+	width: 100%;
+	display: block;	
+}
 
+.control-group label {
+	font-weight: bold;
+}
 
+.control-group span input {
+	width: 40%;
+}
 
-/* Fixes styling for product page */
+.control-group span textarea {
+	width: 80%;
+}
+
+/************************************************
+ * Products
+ ***********************************************/
 
 img.variation-warranty {
 	margin: 0 auto;
@@ -43,7 +63,9 @@ img.variation-warranty {
 
 
 
-/* Body Styling */
+/************************************************
+ * Body
+ ***********************************************/
 
 #wrap_all {
 	-webkit-box-shadow: none;
@@ -75,7 +97,9 @@ h3.cufon_headings {
 }
 
 
-/* Header Styling */
+/************************************************
+ * Header
+ ***********************************************/
 
 .rss a {
 	display: none;
@@ -90,10 +114,9 @@ h3.cufon_headings {
 }
 
 
-
-
-
-/* Navigation Styling */
+/************************************************
+ * General Navigation
+ ***********************************************/
 
 .jon_modify {
 	background: #052a69;
@@ -139,8 +162,13 @@ h3.cufon_headings {
 	border: none !important;
 }
 
+.main_menu .avia_mega > li:hover > a, #top .main_menu .avia_mega > .current-menu-item > a {
+	color: #000;
+}
 
-/* Navigation Cart Styling */
+/************************************************
+ * Navigation Cart Styling
+ ***********************************************/
 
 .sub_menu .dropdown_link, .shopping_cart_link a, .checkout_link a {
 color: #dcc786 !important;
