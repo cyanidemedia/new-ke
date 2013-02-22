@@ -1,5 +1,7 @@
 new-ke
 ======
 
-A more sane approach to versioning, that more directly mirrors a production environment.  
-.
+As we're rounding for home base, I've decided to create a new repo:
+
+* Easier transition
+* More fun :D
