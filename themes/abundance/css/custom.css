@@ -1,6 +1,18 @@
 /* Have fun adding your style here :) - PS: At all times this file should contain a comment or a rule, otherwise opera might act buggy :( */
 
 /************************************************
+ * Footer
+ ***********************************************/
+.footer-sprite, .footer-sprite table {
+	width: 100%;
+	border: 0;
+}
+
+.footer-sprite table, .footer-sprite table tr, .footer-sprite table td {
+	border: 0;
+}
+
+/************************************************
  * Forms
  ***********************************************/
 .control-group {
@@ -163,7 +175,7 @@ h3.cufon_headings {
 }
 
 .main_menu .avia_mega > li:hover > a, #top .main_menu .avia_mega > .current-menu-item > a {
-	color: #000;
+	color: #052a69;
 }
 
 /************************************************
@@ -186,3 +198,19 @@ color: #dcc786 !important;
 a.cart_dropdown_link {
 	color: #dcc686 !important;
 }
+
+/************************************************
+ * General Cart Styling
+ ***********************************************/
+
+ .shipping-calculator-form .form-row-last {
+ 	clear: both;
+ }
+
+/************************************************
+ * General Cart Styling
+ ***********************************************/
+
+ .title_container p {
+ 	color: #000;
+ }

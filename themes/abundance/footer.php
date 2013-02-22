@@ -26,7 +26,23 @@
                 {
                 	echo "<div class='footer-logos'><div class='container'>";
                 	?>
-                		<div class="jsprite-espn-gray"></div><div class="jsprite-nascar-gray"></div><div class="jsprite-hbo-gray"></div><div class="jsprite-cnn-gray"></div>
+                	<div class="footer-sprite">
+                		<table>
+                			<tr>
+                				<td>
+                					<div class="jsprite-espn-gray"></div>
+                				</td>
+                				<td>
+                					<div class="jsprite-nascar-gray"></div>
+                				</td>
+                				<td>
+                					<div class="jsprite-hbo-gray"></div>
+                				</td>
+                				<td>
+                					<div class="jsprite-cnn-gray"></div>
+                				</td>
+                		</table>
+                	</div>
                 	<?php
 	    			// foreach($attachments as $key => $attachment) 
 					// {
@@ -85,7 +101,7 @@
 		<!-- ####### SOCKET CONTAINER ####### -->
 			<div class='container_wrap' id='socket'>
 				<div class='container'>
-					<span class='copyright'>&copy; <?php _e('Copyright','avia_framework'); ?> - <a href='<?php echo home_url('/'); ?>'><?php echo get_bloginfo('name');?></a> - <a href='http://www.kriesi.at'>Wordpress Theme by Kriesi.at</a></span>
+					<span class='copyright'>&copy; <?php _e('Copyright','avia_framework'); ?> - <a href='<?php echo home_url('/'); ?>'><?php echo get_bloginfo('name');?></a> - <a href='http://www.onewebcentric.com' target='_blank'>Powered by onewebcentric.com</a></span>
 				
 					<ul class="social_bookmarks">
 							<?php do_action('avia_add_social_icon','footer');
