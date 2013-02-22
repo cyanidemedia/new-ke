@@ -18,11 +18,11 @@ $order = new WC_Order( $order_id );
 	</thead>
 	<tfoot>
 	<?php 
-		if ($totals = $order->get_order_item_totals()) foreach ($totals as $label => $value) :
+		if ( $totals = $order->get_order_item_totals() ) foreach ( $totals as $total ) :
 			?>
 			<tr>
-				<th scope="row" colspan="2"><?php echo $label; ?></th>
-				<td><?php echo $value; ?></td>
+				<th scope="row" colspan="2"><?php echo $total['label']; ?></th>
+				<td><?php echo $total['value']; ?></td>
 			</tr>
 			<?php 
 		endforeach; 
@@ -41,7 +41,7 @@ $order = new WC_Order( $order_id );
 				endif;
 
 				echo '
-					<tr>
+					<tr class = "' . esc_attr( apply_filters('woocommerce_order_table_item_class', 'order_table_item', $item, $order ) ) . '">
 						<td class="product-name">';
 						
 				echo '<a href="'.get_permalink( $item['id'] ).'">' . $item['name'] . '</a>';
@@ -77,6 +77,8 @@ $order = new WC_Order( $order_id );
 		<a href="<?php echo esc_url( $woocommerce->nonce_url( 'order_again', add_query_arg( 'order_again', $order->id, add_query_arg( 'order', $order->id, get_permalink( woocommerce_get_page_id( 'view_order' ) ) ) ) ) ); ?>" class="button"><?php _e('Order Again', 'woocommerce'); ?></a>
 	</p>
 <?php endif; ?>
+
+<?php do_action( 'woocommerce_order_details_after_order_table', $order ); ?>
 
 <header>
 	<h2><?php _e('Customer details', 'woocommerce'); ?></h2>
